@@ -2,8 +2,8 @@
 
 package com.google.re2;
 
-import com.humio.regex.Matcher;
-import com.humio.regex.Pattern;
+import com.humio.jitrex.Matcher;
+import com.humio.jitrex.Pattern;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;

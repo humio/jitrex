@@ -21,9 +21,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.humio</groupId>
-    <artifactId>regex</artifactId>
+    <artifactId>jitrex</artifactId>
     <packaging>jar</packaging>
-    <version>0.1.0</version>
+    <version>0.1.1</version>
     <inceptionYear>2019</inceptionYear>
 
     <properties>

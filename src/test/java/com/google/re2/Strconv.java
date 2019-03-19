@@ -10,7 +10,7 @@
 
 package com.google.re2;
 
-import com.humio.regex.re2.Unicode;
+import com.humio.jitrex.re2.Unicode;
 
 class Strconv {
 

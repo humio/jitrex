@@ -2,8 +2,8 @@
 
 package com.google.re2;
 
-import com.humio.regex.Matcher;
-import com.humio.regex.Pattern;
+import com.humio.jitrex.Matcher;
+import com.humio.jitrex.Pattern;
 import org.junit.Ignore;
 
 import java.util.Arrays;
@@ -24,7 +24,7 @@ public class ApiTestUtils {
     try {
       Pattern.compile(regex, flag);
       fail(
-          "Compiling Pattern with regex: "
+          "Compiling Pattern with jitrex: "
               + regex
               + " and flag: "
               + flag
@@ -100,8 +100,8 @@ public class ApiTestUtils {
   }
 
   /**
-   * This takes a regex and it's compile time flags, a string that is expected to match the regex
-   * and a string that is not expected to match the regex.
+   * This takes a jitrex and it's compile time flags, a string that is expected to match the jitrex
+   * and a string that is not expected to match the jitrex.
    *
    * We don't check for JDK compatibility here, since the flags are not in a 1-1 correspondence.
    *
@@ -125,7 +125,7 @@ public class ApiTestUtils {
   }
 
   /**
-   * Tests that both RE2 and JDK split the string on the regex in the same way, and that that way
+   * Tests that both RE2 and JDK split the string on the jitrex in the same way, and that that way
    * matches our expectations.
    */
 
@@ -183,7 +183,7 @@ public class ApiTestUtils {
     // JDK
     java.util.regex.Pattern pj = java.util.regex.Pattern.compile(pattern);
     java.util.regex.Matcher mj = pj.matcher("x");
-    // java.util.regex.Pattern doesn't have group count in JDK.
+    // java.util.jitrex.Pattern doesn't have group count in JDK.
     assertEquals(count, mj.groupCount());
   }
 
@@ -201,7 +201,7 @@ public class ApiTestUtils {
     // JDK
     java.util.regex.Pattern pj = java.util.regex.Pattern.compile(regexp);
     java.util.regex.Matcher matchStringj = pj.matcher(text);
-    // java.util.regex.Matcher matchBytes =
+    // java.util.jitrex.Matcher matchBytes =
     //   p.matcher(text.getBytes(Charsets.UTF_8));
     assertEquals(true, matchStringj.find());
     // assertEquals(true, matchBytes.find());

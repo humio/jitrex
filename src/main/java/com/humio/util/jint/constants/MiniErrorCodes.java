@@ -27,7 +27,7 @@ public interface MiniErrorCodes {
     int ERR_MASK_FATAL = 0x00005000;
     int ERR_MASK_INTERNAL = 0x00006000;
 
-    // regex codes
+    // jitrex codes
 
     int ERR_R_GENERIC = ERR_MASK_REGEX | ERR_MASK_INTERNAL;
 

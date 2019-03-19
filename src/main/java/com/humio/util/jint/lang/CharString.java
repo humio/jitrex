@@ -6,7 +6,7 @@
 */
 package com.humio.util.jint.lang;
 
-import com.humio.regex.util.Regex;
+import com.humio.jitrex.util.Regex;
 
 /**
  * Character array segment. CharString object has roughly the same

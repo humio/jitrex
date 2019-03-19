@@ -7,7 +7,7 @@
 package com.humio.util.jint.util;
 
 import com.humio.util.jint.lang.ArgList;
-import com.humio.regex.util.Formatter;
+import com.humio.jitrex.util.Formatter;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -137,12 +137,12 @@ public class CompilerException extends RuntimeException {
     }
 
     public int getLine() {
-        // for jint, not regex
+        // for jint, not jitrex
         return fpos >>> 10;
     }
 
     public int getColumn() {
-        // for jint, not regex
+        // for jint, not jitrex
         return fpos & 0x3FF;
     }
 

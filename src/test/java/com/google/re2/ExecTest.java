@@ -7,7 +7,7 @@
 
 package com.google.re2;
 
-import com.humio.regex.Pattern;
+import com.humio.jitrex.Pattern;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -400,7 +400,7 @@ public class ExecTest {
         continue;
       }
 
-      //   Field 1: the regex(3) flags to apply, one character per
+      //   Field 1: the jitrex(3) flags to apply, one character per
       //   REG_feature flag. The test is skipped if REG_feature is not
       //   supported by the implementation. If the first character is
       //   not [BEASKLP] then the specification is a global control
