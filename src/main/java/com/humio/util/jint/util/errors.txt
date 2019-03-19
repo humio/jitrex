@@ -1,0 +1,165 @@
+# Jint compiler error codes
+
+# Lexer error messages
+
+ERR_L_IOERROR		I/O Error: '%s'
+ERR_L_BACKSLASHEOF	Backslash before end of file
+ERR_L_STRINGEND		Undelimited string
+ERR_L_EOFINSTRING	End of file in string
+ERR_L_EOFINCHAR		End of file in quoted char
+ERR_L_EMPTYCHAR		Empty quoted char
+ERR_L_CHAREND		Undelimited quoted char
+ERR_L_COMMENTEND	Undelimited comment
+ERR_L_NUMFORMAT		Number format error: '%s'
+ERR_L_REGEXEND		Undelimited text processing expression
+ERR_L_EOFINREGEX	End of file in text processing expression
+ERR_L_ILLEGALCHAR	Illegal char in input: '%s'
+
+ERR_L_NEVER		This code should never be reached
+
+# Parser error messages
+
+ERR_P_TOKENINSERTED	%s inserted
+ERR_P_NOTSTANDALONE	Regex implicitly declared standalone on outermost level (use option 'S')
+
+ERR_P_TOKENEXPECTED	%s expected
+ERR_P_DUPEXTENDS	Duplicate list of extended classes/interfaces
+ERR_P_DUPIMPLEMENTS	Duplicate list of implemented interfaces
+ERR_P_CASEEXPECTED	Either 'case' or 'default' keyword expected
+ERR_P_CATCHEXPECTED	Either 'catch' or 'finally' keyword expected
+ERR_P_TYPEEXPECTED	Type expected
+ERR_P_UNEXPECTED	%s unexpected here
+ERR_P_VAREXPECTED	Variable name expected
+ERR_P_VALUEEXPECTED	Constant, variable, method call, or other expression expected
+ERR_P_OPEXPECTED	Operator or ';' expected
+ERR_P_IDENTEXPECTED	Identifier expected
+ERR_P_ARRNOTEMPTY	Empty [] expected
+ERR_P_REGEXEXPECTED	Regular expression expected
+
+ERR_P_NOTIMPL		Construction %s not implemented
+
+ERR_P_CLASSKEYWORD	'class' or 'interface' keyword expected
+
+# Class table error codes
+
+ERR_T_CANTRESOLVE	Cound not resolve type '%s' in %s
+ERR_T_ARRNOTEMPTY	Empty [] expected
+ERR_T_NOTSIMPLEID	Simple (not qualified) identifier expected
+ERR_T_IDEXPECTED	Identifier expected
+ERR_T_NOTLIST		Comma-separated list expected
+ERR_T_MULTIINHERIT	Multiple inheritance for %s : %s and %s
+
+ERR_T_INTERNAL		Internal error: %s
+ERR_T_ONFINISH		Error in finishing scope %s: %s
+
+# Typer (analyzer) error messages
+
+ERR_A_IMPLICITDCL	Implicit valiable declaration: %s
+
+ERR_A_NOTTHROWN		Exception '%s' is not thrown in the body of this try statement
+
+ERR_A_VARREDECL		Variable already declared at line %s
+ERR_A_ARRNOTEMPTY	Empty [] expected
+ERR_A_ARREMPTY		Empty [] unexpected
+ERR_A_TYPEMISMATCH	Type mismatch: '%s' and '%s'
+ERR_A_TYPENOTFOUND	Type '%s' not found
+ERR_A_CANTACCLABEL	Cannot access label '%s'
+ERR_A_NOOUTERCLASS	Cannot find appropriate outer class
+ERR_A_NOMETHOD		Method '%s' not found in class '%s'
+ERR_A_BOOLCAST		Cannot cast primitive type boolean 
+ERR_A_VOIDCAST		Expression of type 'void' cannot be casted
+ERR_A_TOBOOLCAST	Cannot cast to primitive type boolean
+ERR_A_TOVOIDCAST	Cannot cast to void
+ERR_A_OBJTOPRIMCAST	Cannot cast object to primitive type
+ERR_A_PRIMTOOBJCAST	Cannot cast primitive type to object
+ERR_A_CANTCAST		Cannot cast '%s' to '%s'
+ERR_A_NOTTHROWABLE	Type '%s' is not a subclass of Throwable and cannot be thrown
+ERR_A_MUSTBEBOOL	Boolean expression expected
+ERR_A_FIELDNOTSTAT	Field '%s' is not static
+ERR_A_NOFIELD		Field '%s' not found in class '%s'
+ERR_A_NOVAR		Variable '%s' not found
+ERR_A_INSTOFPRIM1	Expressions of primitive type cannot be used in instanceof
+ERR_A_INSTOFPRIM2	Primitive types cannot be used in instanceof
+ERR_A_MATCHARG1		Left argument must be Any, String, char[] or CharString
+ERR_A_MATCHARG2		Right argument must be Regex or Substitution
+ERR_A_REGEXTE		Regex cannot be used with ~= operator, use ~ instead
+ERR_A_NOTLVALUE		Expression cannot be assigned to (not lvalue)
+ERR_A_NOTINTEGER	Type '%s' is not integer
+ERR_A_NOTNUMBER		Type '%s' is not number
+ERR_A_LABELREDEF	Label '%s' not defined
+ERR_A_NOTSIMPLEID	Simple (not qualified) identifier expected
+ERR_A_BADDCL		Bad variable/field declaration
+ERR_A_NEWARRARGS	Array creation operator cannot have parameters
+ERR_A_NOCONSTRUCTOR	Constructor not found (%s) in %s
+ERR_A_EXPLCONTEXT	Cannot have explicit context in new for this class (or operator missing)
+ERR_A_BADSWITCHTYPE	Type '%s' cannot be used in switch
+ERR_A_PRIMSYNC		Type '%s' is primitive and cannot be used in synchronized statement
+ERR_A_NOTINTARGS	Not integer operator parameters: '%s', '%s'
+ERR_A_NOBESTMATCH	Ambiguous method call: %s
+ERR_A_BADMETHODNAME	Method name must be an identifier
+ERR_A_CANTRESOLVE	Cannot resolve name '%s'
+ERR_A_NOTINDEXABLE	Cannot apply indexing to type '%s'
+ERR_A_NOTCAUGHT		Following exceptions not declared as thrown and not caught: %s
+ERR_A_STATICTHIS	Cannot use 'this' and 'self' variables in static method
+ERR_A_NONSTATICACC	No implicit object of type %s (check for static methods/classes)
+ERR_A_FIELDNOTIDENT	Identifier expected after '.'
+ERR_A_CONSTERROR	Error during constant expression evaluation: '%s'
+ 
+ERR_A_NEVER		Never reached
+ERR_A_CANTMAKEARR	Cannot make array type
+ERR_A_INTERNAL		Internal error: %s
+ERR_A_BADOP		Bad operator: %s
+ERR_A_PARAMUNRES	Formal parameter type not resolved
+
+# compiler error codes
+
+ERR_C_CANTASSIGN	Expression not assignable (not lvalue)
+ERR_C_CVTNULLTOPRIM	Cannot convert null to primitive type
+ERR_C_NOENCLOSING       Failed to find suitable enclosing statement for break/continue
+ERR_C_NOCNSTRWOPRM	No constructor without parameters found in %s
+ERR_C_NONSTATINIT	Cannot have not-static initializers in interface
+ERR_C_INTERFCONSTR	Constructors are not allowed in interface
+ERR_C_THISASSIGN	Cannot modify 'this' and 'self' variables 
+ERR_C_RETURNREQ		Return required at the end of this method
+ERR_C_CASEMISMATCH	Case expression type is incostistent with switch type
+ERR_C_TWODEFAULT	Two default case labels in switch statement
+ERR_C_NOTBOOL		Boolean expression expected
+ERR_C_PRIMELEM		Cannot apply [..] to primitive type
+ERR_C_PICKEDNONSTR	Can pick only String or CharString variables
+ERR_C_MATCHARG1		Left argument in matching must be Any, String, char[] or CharString
+ERR_C_DUPCASE		Duplicate case label
+
+ERR_C_INTERNAL		Internal error: %s
+ERR_C_NESTING		Nesting problems
+ERR_C_NEVER		Never reached
+ERR_C_BADOP		Bad operator: %s
+
+# formatter error codes
+
+ERR_F_NOVARNAME		Variable name missing
+ERR_F_NOCURLBRACKET	Closing '}' expected for '{'
+ERR_F_BADEND		%s in the end of format string
+ERR_F_BADFORMATCHAR	Invalid format char: %s
+ERR_F_INCOMPLETE	Incomplete format
+ERR_F_NOTWITHJAVA	Format character %s cannot be used with java.text formats
+
+# regex error messages
+
+ERR_R_NOVARNAME		Variable name missing
+ERR_R_NOCURLBRACKET	No closing '}' for '{'
+ERR_R_BADSTART		Cannot have %s in the beginning of regex
+ERR_R_NOVAREXPR		No '(' for pick variable
+ERR_R_BQUNFINISHED	Unfinished (? construction
+ERR_R_BQBAD		Illegal or unimplemented (? construction
+ERR_R_NOBRACKET		No closing ')' for '('
+ERR_R_EXTRABRACKET	Extra closing ')' or other parser error
+ERR_R_NOSQBRACKET	Closing ']' expected for '['
+ERR_R_STRAYBSLASH	Stray backslash
+ERR_R_CTLUNFINISHED	Unfinished \c construction
+ERR_R_CTLINVALID	Invalid character after \c
+ERR_R_HEXUNFINISHED	Unfinished \x
+ERR_R_HEXBADNUMBER	Bad %s-digit hex number: %s"
+ERR_R_BADBACKREF	Bad backreference
+
+ERR_R_INTERNAL		Internal error in regex parsing: %s
+
