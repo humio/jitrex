@@ -1,4 +1,4 @@
-# Humio JitRex - Fast JVM Bytecode Regex Engine
+# Humio JITrex - Fast JVM Bytecode Regex Engine
 
 This project is based on work done in 2000 by Peter Sorotokin as part 
 of the now defunct [Jint Programming Language](http://jint.sourceforge.net).
