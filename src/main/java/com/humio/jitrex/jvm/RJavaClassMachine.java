@@ -237,7 +237,7 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
                     if (thisClass == null)
                         synchronized (counterLock) {
                             counter++;
-                            thisClass = "kmy/jitrex/jvm/R_tmp" + counter;
+                            thisClass = "com/humio/jitrex/jvm/R_tmp" + counter;
                         }
                     gen = new JVMClassGenerator(gen.ACC_PUBLIC, thisClass, stubClass);
                 }
@@ -729,7 +729,7 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
                 gen.startMethod(gen.ACC_PUBLIC, "setRefiller", "(" + refillerType + ")V", null);
                 gen.newobject("java/lang/RuntimeException");
                 gen.dup("Ljava/lang/RuntimeException;");
-                gen.loadConst("This jitrex was explicitly compiled not to support refilling.");
+                gen.loadConst("This regex was explicitly compiled not to support refilling.");
                 gen.invokespecial("java/lang/RuntimeException", "<init>", "(Ljava/lang/String;)V");
                 gen.athrow();
                 gen.endMethod();

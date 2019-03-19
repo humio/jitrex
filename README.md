@@ -6,7 +6,7 @@ Peter kindly agreed to relicense the original code under Apache License.
 
 A regex engine that has the following properties:
 
-- Compiling a regex with `com.humio.regex.Pattern.compile(...)` produces a custom Java class.
+- Compiling a regex with `com.humio.jitrex.Pattern.compile(...)` produces a custom Java class.
   This step is not as fast as the other regex engines. 
 - The resulting regex however is fast, especially once HotSpot has jit'ed the code, so you
   should cache the compiled `Pattern` instance.
