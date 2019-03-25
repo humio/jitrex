@@ -22,8 +22,7 @@
 
     <groupId>com.humio</groupId>
     <artifactId>jitrex</artifactId>
-    <packaging>jar</packaging>
-    <version>0.1.1</version>
+    <version>0.1.2-SNAPSHOT</version>
     <inceptionYear>2019</inceptionYear>
 
     <properties>
@@ -37,9 +36,7 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.12</version>
-            <type>jar</type>
             <scope>test</scope>
-            <optional>true</optional>
         </dependency>
     </dependencies>
 
@@ -53,7 +50,17 @@
                 </includes>
                 <targetPath>META-INF</targetPath>
             </resource>
+            <resource>
+                <directory>${basedir}/src/main/resources</directory>
+            </resource>
         </resources>
     </build>
 
+    <distributionManagement>
+        <repository>
+            <id>bintray-humio-Maven</id>
+            <name>humio-Maven</name>
+            <url>https://api.bintray.com/maven/humio/Maven/jitrex/;publish=1</url>
+        </repository>
+    </distributionManagement>
 </project>
