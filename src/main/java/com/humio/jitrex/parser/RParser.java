@@ -26,7 +26,6 @@ import java.util.Vector;
  */
 public class RParser implements CharClassCodes, MiniErrorCodes {
 
-    public final static int FILE_PATTERN_SYNTAX = 0x1000;
     private RNode head;
     private RNode tail;
     private int varCounter;
@@ -79,10 +78,7 @@ public class RParser implements CharClassCodes, MiniErrorCodes {
     public RNode parse(char[] regex, int offset, int length, boolean noimplicit) {
         int indexIn = offset + length;
         int index;
-        if ((syntax & FILE_PATTERN_SYNTAX) == 0)
             index = parseImpl(regex, offset, indexIn);
-        else
-            index = parseFilePattern(regex, offset, indexIn, false);
         if (index < indexIn)
             throw new CompilerException(ERR_R_EXTRABRACKET, index);
         RNode res = head==null ? new REmptyNode(offset) : head;
@@ -129,72 +125,6 @@ public class RParser implements CharClassCodes, MiniErrorCodes {
         for (int i = 0; i < size; i++)
             res[i] = picks.nextElement();
         return res;
-    }
-
-    public int parseFilePattern(char[] regex, int index, int maxIndex, boolean inner) {
-        // Loop through all characters and process them
-        // through the big switch statement. Subpatterns (inside
-        // brackets) are processed recursively.
-        for (int i = index; i < maxIndex; i++) {
-            char c = regex[i];
-            int pos = i;
-            switch (c) {
-                case '*':
-                    append(new RRepeatNode(pos, (c == '*' ? 0 : 1),
-                            Integer.MAX_VALUE, new RAnyNode(pos), false));
-                    continue;
-                case '?':
-                    append(new RAnyNode(pos));
-                    continue;
-                case '[':
-                    i = parseCharClass(regex, i, maxIndex);
-                    append(charClassNode);
-                    continue;
-                case '{': {
-                    int start = i;
-                    RNode saveHead = head;
-                    RNode saveTail = tail;
-                    head = null;
-                    tail = null;
-                    i = parseFilePattern(regex, i + 1, maxIndex, true);
-                    if (i >= maxIndex || regex[i] != '}')
-                        throw new CompilerException(ERR_R_NOCURLBRACKET, start);
-                    RNode p = head;
-                    head = saveHead;
-                    tail = saveTail;
-                    append(p);
-                }
-                continue;
-                case '\\': {
-                    i = parseBackslash(regex, i, maxIndex, true);
-                    if (backslashNode != null)
-                        append(backslashNode);
-                }
-                continue;
-                case ',':
-                    if (inner) {
-                        RNode alt1 = head;
-                        head = null;
-                        tail = null;
-                        i = parseFilePattern(regex, i + 1, maxIndex, true) - 1;
-                        RNode r = head;
-                        head = null;
-                        tail = null;
-                        append(new RAltNode(pos, alt1, r));
-                    } else
-                        append(new RConstNode(pos, ','));
-                    continue;
-                case '}':
-                    if (inner)
-                        return i;
-                    append(new RConstNode(pos, '}'));
-                    continue;
-                default:
-                    append(new RConstNode(pos, c));
-                    continue;
-            }
-        }
-        return maxIndex;
     }
 
     public int parseImpl(char[] regex, int index, int maxIndex) {
