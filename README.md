@@ -19,7 +19,8 @@ A regex engine that has the following properties:
 - Very large regular expressions can fail to compile if the resuling byte code does not
   fit the JVM's 64k limit per method.
 - At present, it does not understand code points beyond `0xffff`, so `.` does not match 💩,
-  which is represented as two 16-bit `char`s.  
+  which is represented as two 16-bit `char`s.  If however your input regex contains a 💩, then
+  it will match just fine.  So in most cases this is not an issue.
   
 This is not a regex engine for everyone.  It is (relatively) slow to compile,
 but fast at matching if you use the same `Matcher` instance many times.
