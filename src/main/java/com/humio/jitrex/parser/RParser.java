@@ -133,7 +133,7 @@ public class RParser implements CharClassCodes, MiniErrorCodes {
         // Loop through all characters and process them
         // through the big switch statement. Subpatterns (inside
         // brackets) are processed recursively.
-        for (int i = index; i < maxIndex; i++) {
+        outer: for (int i = index; i < maxIndex; i++) {
             char c = regex[i];
             int pos = i;
 
@@ -173,11 +173,17 @@ public class RParser implements CharClassCodes, MiniErrorCodes {
                     prev = new RAnyNode(pos);
                     continue;
                 case '{': {
+                    int curl_at = i;
                     int j = ++i;
                     int comma = -1;
                     while (true) {
-                        if (i >= maxIndex)
-                            throw new CompilerException(ERR_R_NOCURLBRACKET, (j - 1));
+                        if (i >= maxIndex) {
+                            i = curl_at;
+                            append(prev);
+                            prev = new RConstNode(pos, c);
+                            continue outer;
+//                            throw new CompilerException(ERR_R_NOCURLBRACKET, (j - 1));
+                        }
                         c = regex[i];
                         if (c == '}')
                             break;

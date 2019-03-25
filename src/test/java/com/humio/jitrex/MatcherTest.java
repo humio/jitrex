@@ -43,13 +43,8 @@ public class MatcherTest {
             // ok //
         }
 
-        try {
-            Pattern p = Pattern.compile("^{");
-            Assert.fail("compile should fail");
-        } catch (CompilerException e) {
-            // ok //
-        }
-
+        Pattern p = Pattern.compile("^{");
+        assertEquals(true, p.matcher("{ ... }").find());
     }
 
 
