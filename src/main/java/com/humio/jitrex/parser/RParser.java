@@ -494,7 +494,7 @@ public class RParser implements CharClassCodes, MiniErrorCodes {
             i++;
         }
         do {
-            if (regex[i] == '\\')
+            if (i < maxIndex && regex[i] == '\\')
             {
                 i += 2;
             } else {

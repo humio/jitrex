@@ -3,6 +3,8 @@ package com.humio.jitrex;
 import com.humio.jitrex.jvm.Sample;
 import com.humio.jitrex.util.Regex;
 import com.humio.jitrex.jvm.Sample2;
+import com.humio.util.jint.util.CompilerException;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -13,8 +15,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.*;
 
 /*
 import java.util.jitrex.Pattern;
@@ -24,6 +25,33 @@ import java.util.jitrex.Matcher;
 public class MatcherTest {
 
     Pattern patt;
+
+    @Test
+    public void testOpenThings() {
+
+        try {
+            Pattern p = Pattern.compile("^[");
+            Assert.fail("compile should fail");
+        } catch (CompilerException e) {
+            // ok //
+        }
+        
+        try {
+            Pattern p = Pattern.compile("^(");
+            Assert.fail("compile should fail");
+        } catch (CompilerException e) {
+            // ok //
+        }
+
+        try {
+            Pattern p = Pattern.compile("^{");
+            Assert.fail("compile should fail");
+        } catch (CompilerException e) {
+            // ok //
+        }
+
+    }
+
 
     @Test
     public void matches() {
