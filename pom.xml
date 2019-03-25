@@ -22,7 +22,6 @@
 
     <groupId>com.humio</groupId>
     <artifactId>jitrex</artifactId>
-    <packaging>jar</packaging>
     <version>0.1.1</version>
     <inceptionYear>2019</inceptionYear>
 
@@ -37,9 +36,7 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.12</version>
-            <type>jar</type>
             <scope>test</scope>
-            <optional>true</optional>
         </dependency>
     </dependencies>
 
