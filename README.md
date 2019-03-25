@@ -3,6 +3,7 @@
 This project is based on work done in 2000 by Peter Sorotokin as part 
 of the now defunct [Jint Programming Language](http://jint.sourceforge.net).
 Peter kindly agreed to relicense the original code under Apache License.
+See [background](#background).
 
 A regex engine that has the following properties:
 
