@@ -37,24 +37,24 @@ Twain texts from the Gutenberg project:
 
 
 regex | matches | `jitrex` | `com.google.re2j` | `java.util.regex`
----   | ---     | ---      | ---    | ---  
- `/Twain/` | 811 | 54ms | 23ms  (-58%) | 42ms (-23%)
- `/(?i)Twain/` | 965 | 119ms | 1181ms  (892%) | 121ms (1%)
- `/[a-z]shing/` | 1540 | 155ms | 931ms  (500%) | 180ms (16%)
- `/Huck[a-zA-Z]+\|Saw[a-zA-Z]+/` | 262 | 148ms | 1233ms  (733%) | 251ms (69%)
- `/\b\w+nn\b/` | 262 | 183ms | 1378ms  (653%) | 348ms (90%)
- `/[a-q][^u-z]{13}x/` | 3021 | 393ms | 2592ms  (559%) | 462ms (17%)
- `/Tom\|Sawyer\|Huckleberry\|Finn/` | 2598 | 183ms | 2361ms  (1190%) | 461ms (151%)
- `/(?i)(Tom\|Sawyer\|Huckleberry\|Finn)/` | 4152 | 300ms | 4656ms  (1452%) | 567ms (89%)
- `/.{0,2}(?:Tom\|Sawyer\|Huckleberry\|Finn)/` | 2598 | 618ms | 3469ms  (461%) | 1836ms (197%)
- `/.{2,4}(Tom\|Sawyer\|Huckleberry\|Finn)/` | 1976 | 978ms | 4162ms  (325%) | 1831ms (87%)
- `/Tom.{10,25}river\|river.{10,25}Tom/` | 2 | 131ms | 1292ms  (886%) | 213ms (62%)
- `/[a-zA-Z]+ing/` | 78424 | 175ms | 1170ms  (568%) | 438ms (150%)
- `/\s[a-zA-Z]{0,12}ing\s/` | 45393 | 279ms | 1602ms  (474%) | 467ms (67%)
- `/([A-Za-z]awyer\|[A-Za-z]inn)\s/` | 194 | 277ms | 1622ms  (485%) | 672ms (142%)
- `/["'][^"']{0,30}[?!\.]["']/` | 8072 | 145ms | 921ms  (535%) | 181ms (24%)
- `/∞\|✓/` | 2 | 119ms | 699ms  (487%) | 377ms (216%)
- `/\p{Sm}/` | 69 | 117ms | 731ms  (524%) | 149ms (27%)
+---   | ---     | ---      | ---               | ---  
+ `/Twain/` | 811 | 54ms | 22ms  (40%) | 42ms (77%)
+ `/(?i)Twain/` | 965 | 123ms | 1207ms  (981%) | 120ms (97%)
+ `/[a-z]shing/` | 1540 | 155ms | 1043ms  (672%) | 187ms (120%)
+ `/Huck[a-zA-Z]+\|Saw[a-zA-Z]+/` | 262 | 146ms | 1293ms  (885%) | 265ms (181%)
+ `/\b\w+nn\b/` | 262 | 185ms | 1345ms  (727%) | 347ms (187%)
+ `/[a-q][^u-z]{13}x/` | 3021 | 409ms | 2475ms  (605%) | 440ms (107%)
+ `/Tom\|Sawyer\|Huckleberry\|Finn/` | 2598 | 185ms | 2501ms  (1351%) | 479ms (258%)
+ `/(?i)(Tom\|Sawyer\|Huckleberry\|Finn)/` | 4152 | 311ms | 4755ms  (1528%) | 587ms (188%)
+ `/.{0,2}(?:Tom\|Sawyer\|Huckleberry\|Finn)/` | 2598 | 611ms | 3640ms  (595%) | 1735ms (283%)
+ `/.{2,4}(Tom\|Sawyer\|Huckleberry\|Finn)/` | 1976 | 1000ms | 4221ms  (422%) | 1807ms (180%)
+ `/Tom.{10,25}river\|river.{10,25}Tom/` | 2 | 120ms | 1374ms  (1145%) | 210ms (175%)
+ `/[a-zA-Z]+ing/` | 78424 | 178ms | 1275ms  (716%) | 434ms (243%)
+ `/\s[a-zA-Z]{0,12}ing\s/` | 45393 | 291ms | 1746ms  (600%) | 484ms (166%)
+ `/([A-Za-z]awyer\|[A-Za-z]inn)\s/` | 194 | 291ms | 2190ms  (752%) | 669ms (229%)
+ `/["'][^"']{0,30}[?!\.]["']/` | 8072 | 153ms | 1012ms  (661%) | 175ms (114%)
+ `/∞\|✓/` | 2 | 109ms | 712ms  (653%) | 375ms (344%)
+ `/\p{Sm}/` | 69 | 119ms | 1252ms  (1052%) | 133ms (111%)
 
 Just adding up these numbers provides an overall ~2x speedup relative to java.util.regex,
 and 7x speedup relative to com.google.re2j.
