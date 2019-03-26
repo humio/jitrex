@@ -36,8 +36,8 @@ It runs the following regexes over the 302,278 lines of text (15MB) in the colle
 Twain texts from the Gutenberg project:
 
 
-regex | matches | `jitrex` | `com.google.re2j` | `java.util.regex`
----   | ---     | ---      | ---               | ---  
+regex | #found | `jitrex` | `com.google.re2j` | `java.util.regex`
+---   | ---:    | ---:     | ---:              | ---: 
  `/Twain/` | 811 | 54ms | 22ms  (40%) | 42ms (77%)
  `/(?i)Twain/` | 965 | 123ms | 1207ms  (981%) | 120ms (97%)
  `/[a-z]shing/` | 1540 | 155ms | 1043ms  (672%) | 187ms (120%)
