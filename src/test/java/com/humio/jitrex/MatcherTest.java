@@ -413,4 +413,13 @@ public class MatcherTest {
 
         assertFalse(m.find());
     }
+
+    @Test
+    public void dsbRegex() {
+        String str = "^\\w+$";
+        Pattern p = Pattern.compile(str);
+        Matcher m = p.matcher("W3SVC91");
+
+        assertTrue(m.find());
+    }
 }

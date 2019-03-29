@@ -597,8 +597,6 @@ public class RParser implements CharClassCodes, MiniErrorCodes {
             case 'W':
             case 's':
             case 'S':
-            case 'i':
-            case 'I':
             case 'd':
             case 'D':
                 backslashNode = new RCharClassNode(pos, CharSet.decode(c));
