@@ -71,7 +71,7 @@ Go License.
 
 Based on Peter Sotorokin's work, we have 
 
-- Added a Java-like API (`com.humio.regex.Pattern` and `com.humio.regex.Matcher`),
+- Added a Java-like API (`com.humio.jitrex.Pattern` and `com.humio.jitrex.Matcher`),
 - Removed some Perl-style regex features like `<` and `>`, 
 - Added many RE2-style regex features such as `(?i:...)` group local flags, `\p{Greek}` unicode classes,
 - Made the code pass all relevant parts of the [re2j](https://github.com/google/re2j) junit tests.

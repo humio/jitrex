@@ -17,13 +17,10 @@ public class CharSet implements CharClassCodes {
     public static CharSet FULL_CHARSET = new CharSet(smallRange, CLASS_ALL);
     static char[] spaceRange = {' ', ' ', '\t', '\t', '\r', '\r', '\n', '\n'};
     public static CharSet SPACE_CHARSET = new CharSet(spaceRange, CLASS_DISABLED);
-    static char[] identRange = {'0', '9', 'A', 'Z', 'a', 'z', '_', '_'};
-    public static CharSet IDENT_CHARSET = new CharSet(identRange, CLASS_LETTER);
-    static char[] wordRange = {'A', 'Z', 'a', 'z', '_', '_'};
+    static char[] wordRange = {'0', '9', 'A', 'Z', 'a', 'z', '_', '_'};
     public static CharSet WORD_CHARSET = new CharSet(wordRange, CLASS_LETTER);
     static char[] digitRange = {'0', '9'};
     public static CharSet DIGIT_CHARSET = new CharSet(digitRange, CLASS_DISABLED);
-    public static CharSet NONIDENT_CHARSET = IDENT_CHARSET.negate();
     public static CharSet NONSPACE_CHARSET = SPACE_CHARSET.negate();
     public static CharSet NONWORD_CHARSET = WORD_CHARSET.negate();
     public static CharSet NONDIGIT_CHARSET = DIGIT_CHARSET.negate();
@@ -353,10 +350,6 @@ public class CharSet implements CharClassCodes {
 
     public static CharSet decode(char c) {
         switch (c) {
-            case 'I':
-                return NONIDENT_CHARSET;
-            case 'i':
-                return IDENT_CHARSET;
             case 'S':
                 return NONSPACE_CHARSET;
             case 's':
