@@ -48,8 +48,6 @@ steps:
       - mvn deploy
 
 trigger:
-  branch:
-    - release/*
   event:
     - tag
 
