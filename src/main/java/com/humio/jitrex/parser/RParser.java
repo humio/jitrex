@@ -156,9 +156,22 @@ public class RParser implements CharClassCodes, MiniErrorCodes {
                         Object[] addInfo = {"'" + c + "'"};
                         throw new CompilerException(ERR_R_BADSTART, index, addInfo);
                     }
-                    boolean greedy = i + 1 >= maxIndex || regex[i + 1] != '?';
-                    if (!greedy)
-                        i++;
+
+                    boolean greedy;
+                    if (i + 1 >= maxIndex) {
+                        greedy = true;
+                    } else {
+                        if (regex[i+1] == '?') {
+                            greedy = false;
+                            i++;
+                        } else if (regex[i+1] == '+') {
+                            Object[] addInfo = {"posessive"};
+                            throw new CompilerException(ERR_R_BADSTART, index, addInfo);
+                        } else {
+                            greedy = true;
+                        }
+                    }
+
                     if (c == '?')
                         if (greedy)
                             prev = new RAltNode(pos, prev, null);
