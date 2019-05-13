@@ -87,4 +87,9 @@ public class RPickNode extends RNode {
     public Object eval(RContext context) {
         return context.evalRPick(this);
     }
+
+    @Override
+    public boolean is_empty_node() {
+        return begin == true;
+    }
 }

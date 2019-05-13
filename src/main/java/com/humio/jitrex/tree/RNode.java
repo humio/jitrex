@@ -154,4 +154,8 @@ public abstract class RNode {
         eval(pc);
         return pc.toString();
     }
+
+    public boolean is_empty_node() {
+        return false;
+    }
 }

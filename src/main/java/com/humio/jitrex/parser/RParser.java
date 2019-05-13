@@ -152,7 +152,7 @@ public class RParser implements CharClassCodes, MiniErrorCodes {
                 case '*':
                 case '+':
                 case '?': {
-                    if (prev == null) {
+                    if (prev == null || lasttail_is_empty(prev)) {
                         Object[] addInfo = {"'" + c + "'"};
                         throw new CompilerException(ERR_R_BADSTART, index, addInfo);
                     }
@@ -406,6 +406,21 @@ public class RParser implements CharClassCodes, MiniErrorCodes {
         return maxIndex;
     }
 
+    private boolean lasttail_is_empty(RNode prev) {
+        if (prev == null)
+            return true;
+
+        if (prev.tail != null) {
+            prev = prev.tail;
+            while (prev.tail != null) {
+                prev = prev.tail;
+            }
+        }
+
+        return prev.is_empty_node();
+
+    }
+
     private int parseVariable(char[] regex, int i, int maxIndex) {
         int start = ++i;
         if (i >= maxIndex)
@@ -415,7 +430,11 @@ public class RParser implements CharClassCodes, MiniErrorCodes {
             while (true) {
                 if (i >= maxIndex)
                     break;
-                if (!Character.isLetterOrDigit(regex[i]) && regex[i] != '_')
+                if (!Character.isLetterOrDigit(regex[i])
+                        && regex[i] != '_'
+                        && regex[i] != '-'
+                        && regex[i] != '#'
+                        && regex[i] != '@')
                     break;
                 i++;
             }

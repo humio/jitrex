@@ -28,4 +28,9 @@ public class REmptyNode extends RNode {
     public Object eval(RContext context) {
         return context.evalREmpty(this);
     }
+
+    @Override
+    public boolean is_empty_node() {
+        return true;
+    }
 }
