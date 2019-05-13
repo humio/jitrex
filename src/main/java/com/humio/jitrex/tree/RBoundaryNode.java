@@ -57,4 +57,9 @@ public class RBoundaryNode extends RNode {
     public Object eval(RContext context) {
         return context.evalRBoundary(this);
     }
+
+    public boolean is_empty_node() {
+        return boundaryClass == '^';
+    }
+
 }
