@@ -95,7 +95,7 @@ public class MatcherTest {
     }
 
 
-    @Test
+    // ignore @Test
     public void embeddedVars() {
         patt = Pattern.compile("foo${bar}(?<xx>baz)");
 

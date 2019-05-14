@@ -374,14 +374,14 @@ public class RParser implements CharClassCodes, MiniErrorCodes {
                 continue;
                 case '$': {
                     append(prev);
-                    if (i + 1 >= maxIndex || (c = regex[i + 1]) == ')' || c == '|') {
+//                    if (i + 1 >= maxIndex || (c = regex[i + 1]) == ')' || c == '|') {
                         prev = new RBoundaryNode(pos, '$');
                         continue;
-                    }
-                    i = parseVariable(regex, i, maxIndex);
-                    prev = new RSubstNode(pos, varName);
+//                    }
+//                    i = parseVariable(regex, i, maxIndex);
+//                    prev = new RSubstNode(pos, varName);
                 }
-                continue;
+//                continue;
                 case '[':
                     append(prev);
                     i = parseCharClass(regex, i, maxIndex);
@@ -434,7 +434,11 @@ public class RParser implements CharClassCodes, MiniErrorCodes {
                         && regex[i] != '_'
                         && regex[i] != '-'
                         && regex[i] != '#'
-                        && regex[i] != '@')
+                        && regex[i] != '@'
+                        && regex[i] != '.'
+                        && regex[i] != '['
+                        && regex[i] != ']'
+                )
                     break;
                 i++;
             }
