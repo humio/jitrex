@@ -426,15 +426,17 @@ public class CharSet implements CharClassCodes {
                         res[j++] = 0;
                     else
                         i++;
-                    while (i < in.length)
+                    while (i < in.length) {
                         if ((i & 1) == 0) {
                             // start of original range - end of new range
-                            res[j++] = (char) (in[i++] - 1);
+                            res[j++] = (char) (in[i] - 1);
                         } else {
                             // end of original range - start of new range
                             if (in[i] != maxChar)
-                                res[j++] = (char) (in[i++] + 1);
+                                res[j++] = (char) (in[i] + 1);
                         }
+                        i++;
+                    }
                     if (j < size)
                         res[j++] = maxChar;
                     if (j != size)

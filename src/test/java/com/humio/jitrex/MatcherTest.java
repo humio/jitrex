@@ -1,6 +1,7 @@
 package com.humio.jitrex;
 
 import com.humio.jitrex.jvm.Sample;
+import com.humio.jitrex.tree.CharSet;
 import com.humio.jitrex.util.Regex;
 import com.humio.jitrex.jvm.Sample2;
 import com.humio.util.jint.util.CompilerException;
@@ -203,6 +204,45 @@ public class MatcherTest {
         assertTrue( m.find() );
         assertEquals("2016-01",  m.group(1) );
     }
+
+    private boolean isIdentical(CharSet c1, CharSet c2) {
+        return c1.charClass == c2.charClass && java.util.Arrays.equals(c1.ranges, c2.ranges);
+    }
+
+
+    @Test
+    public void charSetNegateTest() {
+        assertTrue(isIdentical(CharSet.WORD_CHARSET.negate(), CharSet.NONWORD_CHARSET));
+        assertTrue(isIdentical(CharSet.WORD_CHARSET, CharSet.NONWORD_CHARSET.negate()));
+        assertTrue(isIdentical(CharSet.WORD_CHARSET.negate().negate(), CharSet.WORD_CHARSET));
+
+        assertTrue(isIdentical(CharSet.DIGIT_CHARSET.negate(), CharSet.NONDIGIT_CHARSET));
+        assertTrue(isIdentical(CharSet.DIGIT_CHARSET, CharSet.NONDIGIT_CHARSET.negate()));
+        assertTrue(isIdentical(CharSet.DIGIT_CHARSET.negate().negate(), CharSet.DIGIT_CHARSET));
+
+        assertTrue(isIdentical(CharSet.SPACE_CHARSET.negate(), CharSet.NONSPACE_CHARSET));
+        assertTrue(isIdentical(CharSet.SPACE_CHARSET, CharSet.NONSPACE_CHARSET.negate()));
+        assertTrue(isIdentical(CharSet.SPACE_CHARSET.negate().negate(), CharSet.SPACE_CHARSET));
+
+        assertTrue(isIdentical(CharSet.FULL_CHARSET.negate().negate(), CharSet.FULL_CHARSET));
+
+        // This would be a great location for a fuzzy test. For now just a random ranges test
+        java.util.Random rand = new java.util.Random();
+        for (int i = 0; i < 100000; i++) {
+            char[] ranges = new char[30];
+            for (int j = 0; j < ranges.length; j += 2) {
+                int c =  rand.nextInt(0xfffd); // Ensuring the +2 below do not wrap.
+                ranges[j] = (char)c;
+                ranges[j + 1] = (char)(c + 2);
+            }
+            CharSet cs = new CharSet(ranges);
+            if (!isIdentical(cs.negate().negate(), cs)) {
+                System.err.println("Negating twice wat not the identity function for " + cs + " vs " + cs.negate().negate());
+                assertTrue(isIdentical(cs.negate().negate(), cs));
+            }
+        }
+    }
+
     @Test
     public void charSetTest() {
 
