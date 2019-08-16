@@ -20,6 +20,7 @@ public final class Pattern implements Serializable {
     public static final int CASE_INSENSITIVE = Regex.CASE_INSENSITIVE;
     public static final int MULTILINE = Regex.MULTILINE;
     public static final int DOTALL = Regex.DOTALL;
+    public static final int LAZY = Regex.LAZY;
 
     private final Regex regex;
     private final String pattern;

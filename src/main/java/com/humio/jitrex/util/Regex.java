@@ -46,6 +46,7 @@ public abstract class Regex implements Cloneable, FilenameFilter {
     public static final int CASE_INSENSITIVE = 0x01;
     public static final int MULTILINE = 0x02;
     public static final int DOTALL = 0x04;
+    public static final int LAZY = 0x08;
 
     public static Regex createRegex(String re) {
         if (factory == null)

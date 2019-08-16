@@ -8,6 +8,7 @@ package com.humio.jitrex.parser;
 
 import com.humio.jitrex.Pattern;
 import com.humio.jitrex.tree.*;
+import com.humio.jitrex.util.Regex;
 import com.humio.util.jint.constants.MiniErrorCodes;
 import com.humio.util.jint.util.CompilerException;
 
@@ -177,8 +178,10 @@ public class RParser implements CharClassCodes, MiniErrorCodes {
                             prev = new RAltNode(pos, prev, null);
                         else
                             prev = new RAltNode(pos, null, prev);
-                    else
-                        prev = new RRepeatNode(pos, (c == '*' ? 0 : 1), Integer.MAX_VALUE, prev, greedy);
+                    else {
+                        boolean reallyGreedy = greedy && (this.flags & Regex.LAZY) == 0;
+                        prev = new RRepeatNode(pos, (c == '*' ? 0 : 1), Integer.MAX_VALUE, prev, reallyGreedy);
+                    }
                 }
                 continue;
                 case '.':
