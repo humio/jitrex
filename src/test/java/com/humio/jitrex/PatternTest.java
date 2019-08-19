@@ -272,4 +272,23 @@ public class PatternTest {
       // ok
     }
   }
+
+
+  @Test
+  public void testLazyFlag1() {
+      Pattern p = Pattern.compile(".*foo", Pattern.LAZY);
+      Matcher m = p.matcher("foofoo");
+      assertEquals(true, m.find());
+      assertEquals("foo", m.group(0));
+  }
+
+  @Test
+  public void testLazyFlag2() {
+      Pattern p = Pattern.compile(".*foo", 0);
+      Matcher m = p.matcher("foofoo");
+      assertEquals(true, m.find());
+      assertEquals("foofoo", m.group(0));
+  }
+
+
 }
