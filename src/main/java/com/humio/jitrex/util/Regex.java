@@ -370,4 +370,9 @@ public abstract class Regex implements Cloneable, FilenameFilter {
     public boolean accept(File dir, String name) {
         return matchesWhole(name);
     }
+
+    public abstract void setBackTrackLimit(int i);
+    public abstract int getBackTrackLimit();
+    public abstract int getBackTrackCount();
+
 }

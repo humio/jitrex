@@ -138,11 +138,11 @@ public final class Pattern implements Serializable {
     }
 
 
-    public static Pattern compile(String pattern) {
+    public static Pattern compile(String pattern) throws IllegalArgumentException {
         return compile(pattern, 0);
     }
 
-    public static Pattern compile(String pattern, int flags) {
+    public static Pattern compile(String pattern, int flags) throws IllegalArgumentException {
 
         /*
         if (pattern.length() == 0) {

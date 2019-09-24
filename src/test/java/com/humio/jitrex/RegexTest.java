@@ -1,5 +1,6 @@
 package com.humio.jitrex;
 
+import com.humio.jitrex.jvm.JavaClassRegexStub;
 import org.junit.Test;
 
 /*
@@ -115,6 +116,7 @@ public class RegexTest {
 
         long startTime, endTime;
         long[][][] timeTaken = new long[_re.length][ITERATIONS][_str.length];
+        long[][][] backtracks = new long[_re.length][ITERATIONS][_str.length];
         boolean[][] matches = new boolean[_re.length][_str.length];
 
         startTime = System.currentTimeMillis();
@@ -129,7 +131,7 @@ public class RegexTest {
                     {
                         if (debug && (itter % 1000) == 0)
                         {
-                            System.out.print("Iteration/jitrex number/string number " + itter + "/" + regnum + "/" + strnum + "... ");
+                            System.out.print("Iteration/regex number/string number " + itter + "/" + regnum + "/" + strnum + "... ");
                         }
 
                         if (debug && (itter % 1000) == 0)
@@ -164,7 +166,7 @@ public class RegexTest {
             }
         }
         endTime = System.currentTimeMillis();
-        printResult("java.util.jitrex.Pattern", timeTaken, (endTime - startTime), matches, html);
+        printResult("java.util.regex.Pattern", timeTaken, backtracks, (endTime - startTime), matches, html);
         // ----------------------//
 
 
@@ -194,6 +196,7 @@ public class RegexTest {
                         boolean b = m.find();
                         matches[regnum][strnum] = (b == expectedMatch[regnum][strnum]);
                         timeTaken[regnum][itter][strnum] = (System.currentTimeMillis() - iterStarTime);
+                        backtracks[regnum][itter][strnum] = ((JavaClassRegexStub)m.re).getFailCount();
 
                         if (debug && (itter % 1000) == 0)
                         {
@@ -216,14 +219,14 @@ public class RegexTest {
             }
         }
         endTime = System.currentTimeMillis();
-        printResult("com.humio.jitrex.Pattern", timeTaken, (endTime - startTime), matches, html);
+        printResult("com.humio.jitrex.Pattern", timeTaken, backtracks, (endTime - startTime), matches, html);
         // ----------------------//
 
     }
 
 
 
-    private static final void printResult(String regexName, long[][][] matrix, long totalTime, boolean[][] matches, boolean html)
+    private static final void printResult(String regexName, long[][][] matrix, long[][][] backtracks, long totalTime, boolean[][] matches, boolean html)
     {
         // timeTaken[regnum][itter][strnum]
         if (html)
@@ -248,7 +251,7 @@ public class RegexTest {
             else
             {
                 System.out.println("RE: " + _re[re]);
-                System.out.println("  MS\tMAX\tAVG\tMIN\tDEV\tMATCH");
+                System.out.println("  MS\tMAX\tAVG\tMIN\tDEV\tMATCH\tBACKTRACKS");
             }
             for (int str = 0; str < _str.length; str++)
             {
@@ -256,6 +259,7 @@ public class RegexTest {
                 long sumOfSq = 0;
                 long min = Long.MAX_VALUE;
                 long max = Long.MIN_VALUE;
+                long bt = 0;
                 for (int i = 0; i < ITERATIONS; i++)
                 {
                     long elapsed = matrix[re][i][str];
@@ -269,6 +273,7 @@ public class RegexTest {
                     {
                         max = elapsed;
                     }
+                    bt = Math.max(bt, backtracks[re][i][str]);
                 }
                 // calc std dev
                 long stdDev = (long) java.lang.Math.sqrt((sumOfSq - ((total * total) / ITERATIONS)) / (ITERATIONS - 1));
@@ -282,7 +287,7 @@ public class RegexTest {
                 else
                 {
                     System.out.println("  " + total + "\t" + max + "\t" + (double) total / ITERATIONS + "\t" + min + "\t" + stdDev
-                             + "\t'" + matches[re][str] + "'");
+                             + "\t'" + matches[re][str] + "'" + "\t" + bt);
                 }
             }
         }

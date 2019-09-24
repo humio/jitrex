@@ -89,6 +89,21 @@ public class ProxyRegex extends Regex {
         return clone;
     }
 
+    @Override
+    public void setBackTrackLimit(int i) {
+        regex.setBackTrackLimit(i);
+    }
+
+    @Override
+    public int getBackTrackLimit() {
+        return regex.getBackTrackLimit();
+    }
+
+    @Override
+    public int getBackTrackCount() {
+        return regex.getBackTrackCount();
+    }
+
     public String toString() {
         return regex.toString();
     }

@@ -6,6 +6,7 @@
 */
 package com.humio.jitrex.jvm;
 
+import com.humio.jitrex.RegexRuntimeLimitException;
 import com.humio.jitrex.util.Regex;
 import com.humio.jitrex.util.RegexRefiller;
 
@@ -54,6 +55,11 @@ public abstract class JavaClassRegexStub extends Regex {
      * Number of back track operations done.
      */
     protected int failCount;
+
+    /**
+     * Number of back track operations done.
+     */
+    protected int failCountMax = Integer.MAX_VALUE;
 
     /**
      * Starting index for the next search/match.
@@ -327,7 +333,13 @@ public abstract class JavaClassRegexStub extends Regex {
         }
     }
 
+    protected void backtrackLimitReached() {
+        throw new RegexRuntimeLimitException("regex backtrack limit reached", this.failCountMax);
+    }
 
+    public  void setBackTrackLimit(int i) { failCountMax = i; }
+    public  int getBackTrackLimit() { return failCountMax; }
+    public  int getBackTrackCount() { return failCount; }
 
 }
 

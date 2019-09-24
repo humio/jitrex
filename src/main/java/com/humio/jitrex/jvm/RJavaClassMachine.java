@@ -6,6 +6,7 @@
 */
 package com.humio.jitrex.jvm;
 
+import com.humio.jitrex.IllegalRegexException;
 import com.humio.jitrex.compiler.RLabel;
 import com.humio.jitrex.compiler.RMachine;
 import com.humio.jitrex.compiler.RVariable;
@@ -661,6 +662,16 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
 
             gen.iinc(V_FAILCOUNT, 1);
 
+            AbstractMark limit_not_reached = gen.newMark();
+            gen.load(V_FAILCOUNT, "I");
+            gen.load(0, thisType);
+            gen.getfield(stubClass, "failCountMax", "I");
+            gen.jumpIf(false, '<', "I", limit_not_reached);
+
+            gen.load(0, thisType);
+            gen.invokevirtual(stubClass, "backtrackLimitReached", "()V");
+
+            gen.mark( limit_not_reached );
             gen.load(V_FORKPTR, "I");
             gen.jumpIf(true, gen.TOKEN_NE, "I", start);
 
@@ -976,6 +987,8 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
     public Regex makeRegex() {
         try {
             return compiledClass.getConstructor().newInstance();
+        } catch (java.lang.VerifyError e) {
+            throw new IllegalRegexException(IllegalRegexException.BadRegexCause.REGEX_TOO_LONG, "given regular expression is too long");
         } catch (InstantiationException e) {
             e.printStackTrace();
         } catch (IllegalAccessException e) {
@@ -1981,6 +1994,8 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
                 Class result = defineClass(name, body, 0, body.length);
                 resolveClass(result);
                 return result;
+            } catch (java.lang.VerifyError e) {
+                throw new IllegalRegexException(IllegalRegexException.BadRegexCause.REGEX_TOO_LONG, "given regular expression is too long");
             } catch (ClassFormatError e) {
                 throw new RuntimeException("Internal error: class format error: " + e.getMessage());
             }

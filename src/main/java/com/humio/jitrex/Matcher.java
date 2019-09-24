@@ -344,6 +344,19 @@ public class Matcher {
         return res;
     }
 
+    public void setBacktrackLimit(int i) {
+        re.setBackTrackLimit(i);
+    }
+
+    public int getBacktrackLimit() {
+        return re.getBackTrackLimit();
+    }
+
+    /** return number of backtrack operations used (after match/find) */
+    public int getBacktrackCount() {
+        return re.getBackTrackCount();
+    }
+
     abstract static class Appender {
         abstract void append(StringBuffer sb);
         abstract void append(StringBuilder sb);
