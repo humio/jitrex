@@ -5,7 +5,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 
-@RunWith(JUnit4.class)
+// @RunWith(JUnit4.class)
 public class LargeInputTest {
 
     private String makeInput(int repetitions, int constantLen) {
@@ -20,7 +20,7 @@ public class LargeInputTest {
         return sb.toString();
     }
 
-    @Test
+ //   @Test
     public void testInputWithLargeConstantParts() {
         for (int i = 0; i < 1000; i++) {
             String s = makeInput(i, 50);
@@ -46,7 +46,7 @@ public class LargeInputTest {
         return sb.toString();
     }
 
-    @Test
+ //   @Test
     public void testInputWithLargeAnyParts() {
         for (int i = 0; i < 1000; i++) {
             String s = makeDotAllInput(i, 50);
@@ -69,7 +69,7 @@ public class LargeInputTest {
         return sb.toString();
     }
 
-    @Test
+ //   @Test
     public void testInputWithManyGlobs() {
         for (int i = 0; i < 1000; i++) {
             String s = makeManyGlobsInput(i, 1);
