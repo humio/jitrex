@@ -1,5 +1,6 @@
 package com.humio.jitrex;
 
+import com.humio.jitrex.jvm.JavaClassRegexStub;
 import com.humio.jitrex.jvm.Sample;
 import com.humio.jitrex.tree.CharSet;
 import com.humio.jitrex.util.Regex;
@@ -286,6 +287,7 @@ public class MatcherTest {
         patt = Pattern.compile("^(.*?,){11}P");
         Matcher m = patt.matcher("1,2,3,4,5,6,7,8,9,10,11,12");
         assertFalse(m.matches());
+        System.out.println ( " failcount= " + ((JavaClassRegexStub)m.re).getFailCount() );
     }
 
 
@@ -320,6 +322,9 @@ public class MatcherTest {
 
         assertTrue(m.find());
         assertFalse(m.matches());
+
+        System.out.println ( " failcount= " + ((JavaClassRegexStub)m.re).getFailCount() );
+
     }
 
     @Test
@@ -452,6 +457,8 @@ public class MatcherTest {
         Matcher m = p.matcher("22:22.058+0000][gc,cpu ] GC(1969) User=0.06s Sys=0.00s Real=0.01s");
 
         assertFalse(m.find());
+
+        System.out.println ( " failcount= " + ((JavaClassRegexStub)m.re).getFailCount() );
     }
 
     @Test
