@@ -82,6 +82,7 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
     int V_CELLS;
     int V_FORKS;
     int V_FORKPTR;
+    int V_FAILCOUNT;
     int V_END;
     int V_REFILLER = -1; // if not embed; set to RegexRefiller, getting to V_END will cause call to refill
     // can be allocated as needed
@@ -142,12 +143,13 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
         V_FORKS = 4;
         V_FORKPTR = 5;
         V_END = 6;
+        V_FAILCOUNT = 7;
 
         if (noRefiller)
-            maxLocalVariable = 7;
-        else {
-            V_REFILLER = 7;
             maxLocalVariable = 8;
+        else {
+            V_REFILLER = 8;
+            maxLocalVariable = 9;
         }
     }
 
@@ -276,6 +278,10 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
                 gen.store(V_END, "I");
 
                 gen.load(0, thisType);
+                gen.getfield(stubClass, "failCount", "I");
+                gen.store(V_FAILCOUNT, "I");
+
+                gen.load(0, thisType);
                 gen.getfield(stubClass, "forkPtr", "I");
                 gen.dup("I");
                 gen.store(V_FORKPTR, "I");
@@ -338,6 +344,9 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
             gen.load(0, thisType);
             gen.load(V_FORKPTR, "I");
             gen.putfield(stubClass, "forkPtr", "I");
+            gen.load(0, thisType);
+            gen.load(V_FAILCOUNT, "I");
+            gen.putfield(stubClass, "failCount", "I");
         }
     }
 
@@ -649,6 +658,9 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
                 gen.jump(forkMark);
 
             gen.mark(failMark, initStackDepth);
+
+            gen.iinc(V_FAILCOUNT, 1);
+
             gen.load(V_FORKPTR, "I");
             gen.jumpIf(true, gen.TOKEN_NE, "I", start);
 
@@ -920,6 +932,10 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
             gen.load(0, thisType);
             gen.loadConst(ZERO);
             gen.putfield(stubClass, "forkPtr", "I");
+
+            gen.load(0, thisType);
+            gen.loadConst(ZERO);
+            gen.putfield(stubClass, "failCount", "I");
 
             if (customizer != null)
                 customizer.customInitAction(gen);

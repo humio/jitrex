@@ -12,7 +12,7 @@ import java.util.*;
 public class Matcher {
     private final Pattern pattern;
     protected CharSequence input;
-    private final Regex re;
+    protected final Regex re;
     private final Map<String, Pattern.VarEntry> varMap;
     private final Map<String, Pattern.VarEntry> exts;
     private final Pattern.VarEntry[] indexed;

@@ -51,6 +51,11 @@ public abstract class JavaClassRegexStub extends Regex {
     protected int forkPtr;
 
     /**
+     * Number of back track operations done.
+     */
+    protected int failCount;
+
+    /**
      * Starting index for the next search/match.
      */
     protected int headStart;
@@ -91,6 +96,8 @@ public abstract class JavaClassRegexStub extends Regex {
     abstract protected boolean nextMatchInt();
 
     abstract protected Hashtable<String,int[]> getVars();
+
+    public int getFailCount() { return failCount; }
 
     /**
      * Debugging method to print jitrex state. Called if internal error happens.
@@ -189,6 +196,7 @@ public abstract class JavaClassRegexStub extends Regex {
     }
 
     public boolean searchAgain() {
+        failCount = 0;
         searching = true;
         while (true) {
             while (headStart > maxStart) {
@@ -218,6 +226,7 @@ public abstract class JavaClassRegexStub extends Regex {
     }
 
     public boolean search() {
+        failCount = 0;
         searching = true;
         while (true) {
             while (headStart > maxStart) {
@@ -248,6 +257,7 @@ public abstract class JavaClassRegexStub extends Regex {
     }
 
     public boolean matchWhole() {
+        failCount = 0;
         searching = false;
         int lastMatchEnd = -1;
         while (nextMatchInt()) {
@@ -263,6 +273,7 @@ public abstract class JavaClassRegexStub extends Regex {
     }
 
     public boolean match() {
+        failCount = 0;
         searching = false;
         return nextMatchInt();
     }
