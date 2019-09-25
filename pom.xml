@@ -24,6 +24,10 @@
     <artifactId>jitrex</artifactId>
     <version>0.1-SNAPSHOT</version>
     <inceptionYear>2019</inceptionYear>
+    <scm>
+        <connection>scm:git:https://github.com/humio/jitrex</connection>
+        <url>https://github.com/humio/jitrex</url>
+    </scm>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
