@@ -64,9 +64,9 @@
 
     <distributionManagement>
         <repository>
-            <id>bintray-humio-Maven</id>
-            <name>humio-Maven</name>
-            <url>https://api.bintray.com/maven/humio/Maven/jitrex/;publish=1</url>
+            <id>github</id>
+            <name>Humio Apache Maven Packages</name>
+            <url>https://maven.pkg.github.com/humio/jitrex</url>
         </repository>
     </distributionManagement>
 </project>
