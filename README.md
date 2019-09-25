@@ -1,5 +1,3 @@
-[![Build Status](https://cloud.drone.io/api/badges/humio/jitrex/status.svg)](https://cloud.drone.io/humio/jitrex)
-
 # Humio JITrex - Fast JVM Bytecode Regex Engine
 
 This project is based on work done in 2000 by Peter Sorotokin as part 
