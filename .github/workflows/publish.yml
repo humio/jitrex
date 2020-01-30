@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: Write maven configuration
-        shell: |
+        run: |
           touch -p $HOME/.m2
           echo <<SETTINGS > $HOME/.m2/settings.xml
           <?xml version="1.0" encoding="UTF-8"?>
