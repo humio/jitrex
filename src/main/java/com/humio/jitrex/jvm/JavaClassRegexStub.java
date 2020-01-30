@@ -305,7 +305,7 @@ public abstract class JavaClassRegexStub extends Regex {
 
     protected static char lowerCaseCharAt(CharSequence cs, int i) {
         char ch = cs.charAt(i);
-        if (ch < 0x100) {
+        if (ch < 128) {
             if (ch >= 'A' && ch <= 'Z') {
                 return (char) ((int)ch + ('a' - 'A'));
             } else {
