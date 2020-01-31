@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - master
+      - release/0.1
 
 jobs:
   build:
