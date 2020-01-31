@@ -503,6 +503,7 @@ public class RParser implements CharClassCodes, MiniErrorCodes {
                 continue;
             }
             j++;
+            boolean translated = false;
             while (true) {
                 c = regex[j];
                 if (c == '\\') {
@@ -510,11 +511,12 @@ public class RParser implements CharClassCodes, MiniErrorCodes {
                     if (backslashTranslation < 0)
                         continue;
                     c = (char) backslashTranslation;
+                    translated = true;
                 } else
                     j++;
                 break;
             }
-            if (c == ']') {
+            if (c == ']' && !translated) {
                 c = buf[ri - 1];
                 buf[ri++] = c;
                 buf[ri++] = '-';

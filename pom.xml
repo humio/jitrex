@@ -22,8 +22,12 @@
 
     <groupId>com.humio</groupId>
     <artifactId>jitrex</artifactId>
-    <version>0.1.12</version>
+    <version>0.1.13</version>
     <inceptionYear>2019</inceptionYear>
+    <scm>
+        <connection>scm:git:https://github.com/humio/jitrex</connection>
+        <url>https://github.com/humio/jitrex</url>
+    </scm>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -64,9 +68,9 @@
 
     <distributionManagement>
         <repository>
-            <id>bintray-humio-Maven</id>
-            <name>humio-Maven</name>
-            <url>https://api.bintray.com/maven/humio/Maven/jitrex/;publish=1</url>
+            <id>github</id>
+            <name>Humio Apache Maven Packages</name>
+            <url>https://maven.pkg.github.com/humio/jitrex</url>
         </repository>
     </distributionManagement>
 </project>
