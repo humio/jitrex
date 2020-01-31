@@ -290,5 +290,11 @@ public class PatternTest {
       assertEquals("foofoo", m.group(0));
   }
 
+  @Test
+  public void testRangeSquare() {
+    Pattern p = Pattern.compile("[A-\\]]", 0);
+    Matcher m = p.matcher("B");
+    assertEquals(true, m.find());
+  }
 
 }
