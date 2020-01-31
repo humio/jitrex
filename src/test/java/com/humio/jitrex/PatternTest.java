@@ -297,4 +297,12 @@ public class PatternTest {
     assertEquals(true, m.find());
   }
 
+
+  @Test
+  public void testAltRange() {
+    Pattern p = Pattern.compile("[Q]|x", Pattern.CASE_INSENSITIVE);
+    Matcher m = p.matcher("q");
+    assertEquals(true, m.find());
+  }
+
 }

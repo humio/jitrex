@@ -101,6 +101,9 @@ public abstract class RNode {
         this.flags = flags;
         if (tail != null)
             tail.processFlags(flags);
+        if (isLowercase()) {
+            prefix = prefix.toLowerCase();
+        }
     }
 
     public boolean isLowercase() {
