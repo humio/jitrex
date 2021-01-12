@@ -967,7 +967,7 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
 
                 byte[] body = baos.toByteArray();
 
-                if (saveBytecode) {
+                if (saveBytecode || ((getExtensions() & regexFlagToExtension(Regex._SAVE_BYTECODE)) != 0)) {
                     String name = thisClass + ".class";
                     FileOutputStream fos = new FileOutputStream(name);
                     fos.write(body);
@@ -1441,34 +1441,34 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
 
     // How long a string will we unfold into character comparisons?
     private static final int SHORT_STRING_LIMIT = 8;
-    private static final boolean USE_NEW_ASSERT2 = true;
+
+    // For long strings how many of the first characters will we compare before jumping into substring comparison?
+    private static final int UNROLL_PREFIX_SIZE = 4;
 
     public void newAssert2Comparison(char[] constStr) throws IOException {
-        if (constStr.length <= SHORT_STRING_LIMIT) {
-            // Compare char-by-char.
-            //
-            // TODO: investigate whether it's worth loading the input just once and dup'ing it rather than loading it
-            //   each time round the loop. This would also save on instructions.
-            for (int i = 0; i < constStr.length; i++) {
-                gen.load(V_STRING, charSequenceType);
-                gen.load(V_HEAD, "I");
-                gen.loadConst((int) constStr[i]);
-                genCharMatches();
-                gen.jumpIf(true, gen.TOKEN_EE, "Z", failMark);
-                gen.iinc(V_HEAD, 1);
-            }
-        } else {
-            // For long strings unfolding char-by-char comparison generates a lot of code so at a certain point we
-            // instead push the string to the constant pool and perform the comparison in a function.
-            //
-            // TODO: investigate whether unfolding the first N char comparisons and only go to substring comparison
-            //   after they match is worth the effort.
+        int charsToUnroll = (constStr.length <= SHORT_STRING_LIMIT)
+                ? constStr.length
+                : UNROLL_PREFIX_SIZE;
+
+        // Compare char-by-char.
+        for (int i = 0; i < charsToUnroll; i++) {
             gen.load(V_STRING, charSequenceType);
             gen.load(V_HEAD, "I");
-            gen.loadConst(new String(constStr));
+            gen.loadConst((int) constStr[i]);
+            genCharMatches();
+            gen.jumpIf(true, gen.TOKEN_EE, "Z", failMark);
+            gen.iinc(V_HEAD, 1);
+        }
+
+        // For long strings unfolding char-by-char comparison generates a lot of code so at a certain point we instead
+        // push the string to the constant pool and perform the comparison in a function.
+        if (charsToUnroll < constStr.length) {
+            gen.load(V_STRING, charSequenceType);
+            gen.load(V_HEAD, "I");
+            gen.loadConst(new String(constStr).substring(charsToUnroll));
             genSubstringMatches();
             gen.jumpIf(true, gen.TOKEN_EE, "Z", failMark);
-            gen.iinc(V_HEAD, constStr.length);
+            gen.iinc(V_HEAD, constStr.length - charsToUnroll);
         }
     }
 
@@ -1497,10 +1497,10 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
             }
             refillIfHaveTo(againMark);
 
-            if (USE_NEW_ASSERT2) {
-                newAssert2Comparison(constStr);
-            } else {
+            if ((getExtensions() & RMachine.regexFlagToExtension(Regex._OLD_LONG_STRING_HANDLING)) != 0) {
                 oldAssert2Comparison(constStr);
+            } else {
+                newAssert2Comparison(constStr);
             }
         } catch (IOException e) {
             e.printStackTrace();

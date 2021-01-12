@@ -49,9 +49,9 @@ public abstract class RMachine {
     public static final int HINT_START_ANCHORED = 1;
     public static final int HINT_END_ANCHORED = 2;
     public static final int HINT_CHAR_STAR_HEAD = 4; // .* a* [a-z]* type head
-    public static final int FLAG_DOT_IS_ANY = Regex.DOTALL << 16; // . can by any char, not only non-newline
-    public static final int FLAG_MULTILINE  = Regex.MULTILINE << 16; // . can by any char, not only non-newline
-    public static final int FLAG_IGNORECASE = Regex.CASE_INSENSITIVE << 16; // . can by any char, not only non-newline
+    public static final int FLAG_DOT_IS_ANY = regexFlagToExtension(Regex.DOTALL); // . can by any char, not only non-newline
+    public static final int FLAG_MULTILINE  = regexFlagToExtension(Regex.MULTILINE); // . can by any char, not only non-newline
+    public static final int FLAG_IGNORECASE = regexFlagToExtension(Regex.CASE_INSENSITIVE); // . can by any char, not only non-newline
 
     public static final int EXT_HINT = 0x0001; // hint
     public static final int EXT_MULTIFORK = 0x0002; // multiFork and inc
@@ -238,8 +238,13 @@ public abstract class RMachine {
     }
 
     public void setFlags(int flags) {
-        extensions = (extensions & 0xffff) | (flags << 16);
+        extensions = (extensions & 0xffff) | regexFlagToExtension(flags);
     }
+
+    public static final int regexFlagToExtension(int flag) {
+        return flag << 16;
+    }
+
 }
 
 

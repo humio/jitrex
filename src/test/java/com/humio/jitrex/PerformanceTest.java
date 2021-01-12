@@ -1,20 +1,110 @@
 package com.humio.jitrex;
 
+import com.humio.jitrex.util.Regex;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @RunWith(JUnit4.class)
 public class PerformanceTest {
 
+    private static abstract class RegexpBackend {
+
+        public abstract int countMatches(List<String> inputs);
+
+    }
+
+    private static class JitrexBackend extends RegexpBackend {
+
+        private final com.humio.jitrex.Pattern pattern;
+
+        public JitrexBackend(String pattern) {
+            this(pattern, 0);
+        }
+
+        public JitrexBackend(String pattern, int flags) {
+            this.pattern = com.humio.jitrex.Pattern.compile(pattern, flags);
+        }
+
+        @Override
+        public int countMatches(List<String> inputs) {
+            int result = 0;
+            com.humio.jitrex.Matcher matcher = this.pattern.matcher("");
+            for (String s : inputs) {
+                matcher.reset(s);
+                while (matcher.find()) {
+                    result += 1;
+                }
+            }
+            return result;
+        }
+
+    }
+
+    private static class JavaBackend extends RegexpBackend {
+
+        private final java.util.regex.Pattern pattern;
+
+        public JavaBackend(String pattern) {
+            this.pattern = java.util.regex.Pattern.compile(pattern);
+        }
+
+        @Override
+        public int countMatches(List<String> inputs) {
+            int result = 0;
+            java.util.regex.Matcher matcher = pattern.matcher("");
+            for (String s : inputs) {
+                matcher.reset(s);
+                while (matcher.find()) {
+                    result += 1;
+                }
+            }
+            return result;
+        }
+
+    }
+
+    private static class Re2Backend extends RegexpBackend {
+
+        private final com.google.re2j.Pattern pattern;
+
+        public Re2Backend(String pattern) {
+            this.pattern = com.google.re2j.Pattern.compile(pattern);
+        }
+
+        @Override
+        public int countMatches(List<String> inputs) {
+            int result = 0;
+            com.google.re2j.Matcher matcher = pattern.matcher("");
+            for (String s : inputs) {
+                matcher.reset(s);
+                while (matcher.find()) {
+                    result += 1;
+                }
+            }
+            return result;
+        }
+
+    }
+
+    private interface RegexpBackendFactory {
+        public RegexpBackend create(String pattern);
+    }
+
+    private static final Map<String, RegexpBackendFactory> backendFactories = new HashMap<String, RegexpBackendFactory>() {{
+        put("jitrex", (pattern)->new JitrexBackend(pattern, Regex._OLD_LONG_STRING_HANDLING));
+        put("jitrex/i", (pattern)->new JitrexBackend(pattern, Regex.CASE_INSENSITIVE | Regex._OLD_LONG_STRING_HANDLING));
+        put("jitrex/n", (pattern)->new JitrexBackend(pattern, 0));
+        put("jitrex/ni", (pattern)->new JitrexBackend(pattern, Regex.CASE_INSENSITIVE));
+        put("java", JavaBackend::new);
+        put("re2", Re2Backend::new);
+    }};
 
     static String [] regexes = {
             "Twain",
@@ -58,117 +148,131 @@ public class PerformanceTest {
         return out.toArray(new String[out.size()]);
     }
 
+    private static void runBenchmark(List<String> backendNames, String keyBackend, List<String> patterns, List<String> inputs,
+                              int repeatCount) {
+        PrintStream out = System.out;
+        int keyIndex = backendNames.indexOf(keyBackend);
+        List<RegexpBackendFactory> factories = backendNames.stream().map(backendFactories::get).collect(Collectors.toList());
+        List<Map<String, RegexpBackend>> backendCache = new ArrayList<>();
+        for (String ignored : backendNames)
+            backendCache.add(new HashMap<>());
+        StringBuilder header = new StringBuilder(String.format("%-48s", "pattern"));
+        StringBuilder separator = new StringBuilder("------------------------------------------------");
+        for (int i = 0; i < backendNames.size(); i++) {
+            header.append(" |");
+            separator.append("-+");
+            if (keyIndex != -1 && i != keyIndex) {
+                header.append("        ");
+                separator.append("--------");
+            }
+            header.append(String.format(" %9s%s", backendNames.get(i), i == keyIndex ? "!" : " "));
+            separator.append(String.format("-----------"));
+        }
+
+        for (int repeat = 0; repeat < repeatCount; repeat++) {
+            out.println("repeat: " + repeat);
+            out.println(separator);
+            out.println(header);
+            out.println(separator);
+            for (String pattern : patterns) {
+                List<Long> durations = new ArrayList<>();
+                long keyDuration = 0;
+                for (int i = 0; i < factories.size(); i++) {
+                    RegexpBackend backend = backendCache.get(i).get(pattern);
+                    if (backend == null) {
+                        RegexpBackendFactory factory = factories.get(i);
+                        backend = factory.create(pattern);
+                        backendCache.get(i).put(pattern, backend);
+                    }
+                    long start = System.currentTimeMillis();
+                    backend.countMatches(inputs);
+                    long duration = System.currentTimeMillis() - start;
+                    durations.add(duration);
+                    if (i == keyIndex)
+                        keyDuration = duration;
+                }
+                StringBuilder output = new StringBuilder(String.format("%-48s", "/" + pattern + "/"));
+                for (int i = 0; i < factories.size(); i++) {
+                    long duration = durations.get(i);
+                    output.append(String.format(" | %8sms", duration));
+                    if (keyIndex != -1 && i != keyIndex) {
+                        output.append(String.format(" (%4s%%)", 100 * duration / keyDuration));
+                    }
+                }
+                out.println(output.toString());
+            }
+            out.println(separator);
+            out.println();
+        }
+    }
+
+    private static List<String> allBackendNames() {
+        return backendFactories.keySet().stream().sorted().collect(Collectors.toList());
+    }
 
     @Test
     public void testIt() {
+        runBenchmark(
+                allBackendNames(),
+                "jitrex",
+                Arrays.asList(regexes),
+                Arrays.asList(input),
+                3);
+    }
 
-        com.humio.jitrex.Pattern[] patterns1 = new com.humio.jitrex.Pattern[ regexes.length ];
-        for (int i = 0; i < regexes.length; i++) {
-            patterns1[i] = com.humio.jitrex.Pattern.compile(regexes[i]);
-        }
-
-        java.util.regex.Pattern[] patterns2 = new java.util.regex.Pattern[ regexes.length ];
-        for (int i = 0; i < regexes.length; i++) {
-            patterns2[i] = java.util.regex.Pattern.compile(regexes[i]);
-        }
-
-        com.google.re2j.Pattern[] patterns3 = new com.google.re2j.Pattern[ regexes.length ];
-        for (int i = 0; i < regexes.length; i++) {
-            patterns3[i] = com.google.re2j.Pattern.compile(regexes[i]);
-        }
-
-
-        int ITERS = 3;
-
-        for (int iter = 0; iter < ITERS; iter++) {
-
-            System.out.println("---------------- ITER: " +iter+" -----------------");
-            System.out.println("regex                                            | matches | `jitrex`   | `com.google.re2j`   | `java.util.regex`");
-            System.out.println("-------------------------------------------------+---------+------------+---------------------+------------------");
-
-
-
-            long total1 = 0L;
-            long total2 = 0L;
-            long total3 = 0L;
-
-            for (int i = 0; i < regexes.length; i++) {
-
-                int matches1 = 0;
-                long before1 = System.nanoTime();
-                com.humio.jitrex.Matcher m1 = patterns1[i].matcher("");
-
-                for (int l = 0; l < input.length; l++) {
-
-                    m1.reset(input[l]);
-
-                    while(m1.find()) {
-                        matches1 += 1;
-                    }
-
+    public static void main(String[] args) {
+        // The arguments indicate which backends to benchmark. Passing no
+        // arguments means run them all. Passing a list of names means run just
+        // those, for instance,
+        //
+        //   main jitrex java
+        //
+        // means compare jitrex to java. Prefixing a minus means run all except
+        // the ones mentioned, so
+        //
+        //   main -java -re2
+        //
+        // means run all except java and re2. Finally, suffixing an exclamation
+        // point means compare runtimes with that backend, so
+        //
+        //   main jitrex!
+        //
+        // means run all and compare the results with jitrex.
+        List<String> backends = allBackendNames();
+        String keyBackend = "";
+        boolean isDefault = true;
+        for (String arg : args) {
+            boolean isKey = arg.endsWith("!");
+            if (isKey) {
+                arg = arg.substring(0, arg.length() - 1);
+                keyBackend = arg;
+                if (isDefault) {
+                    continue;
                 }
-                long after1 = System.nanoTime();
-
-
-                int matches2 = 0;
-                long before2 = System.nanoTime();
-
-                java.util.regex.Matcher m2 = patterns2[i].matcher("");
-
-                for (int l = 0; l < input.length; l++) {
-
-                    m2.reset(input[l]);
-
-                    while(m2.find()) {
-                        matches2 += 1;
-                    }
-
-                }
-                long after2 = System.nanoTime();
-
-                int matches3 = 0;
-                long before3 = System.nanoTime();
-
-                com.google.re2j.Matcher m3 = patterns3[i].matcher("");
-
-                for (int l = 0; l < input.length; l++) {
-
-                    m3.reset(input[l]);
-
-                    while(m3.find()) {
-                        matches3 += 1;
-                    }
-
-                }
-                long after3 = System.nanoTime();
-
-                long humio_jitrex = (after1-before1)/1000000;
-                long java_util = (after2-before2)/1000000;
-                long google_re2 = (after3-before3)/1000000;
-
-                total1 += humio_jitrex;
-                total2 += java_util;
-                total3 += google_re2;
-
-
-                System.out.println(
-                        String.format("%-48s | %7s | %8sms | %8sms  (%4s%%) | %8sms (%4s%%)",
-                                ("`/" + regexes[i].replace("|", "\\|") + "/`"),
-                                matches2,
-                                humio_jitrex,
-                                google_re2,
-                                (100*google_re2/humio_jitrex),
-                                java_util,
-                                (100*java_util/humio_jitrex)));
-
-                // System.out.println("regex["+i+"], matches="+matches1+"|"+matches2+"|"+matches3+"  jitrex:"+humio_jitrex+"ms; re2j:"+google_re2+"ms; java:"+java_util+"ms"+"; speedup: "+(100*google_re2/humio_jitrex)+"%"+" / "+(100*java_util/humio_jitrex)+"%");
-
             }
-
-            System.out.println("END --- jitrex:"+total1+"ms; java:"+total2+"ms; re2j:"+total3+"ms"+"; speedup[re2]: "+(100*total3/total1)+"%; speedup[java]: "+(100*total2/total1)+"% ---");
-
+            if (arg.startsWith("-")) {
+                arg = arg.substring(1);
+                backends.remove(arg);
+                isDefault = false;
+            } else {
+                if (isDefault) {
+                    backends = new ArrayList<>();
+                    if (!keyBackend.isEmpty())
+                        backends.add(keyBackend);
+                    isDefault = false;
+                }
+                if (!backends.contains(arg)) {
+                    backends.add(arg);
+                }
+            }
         }
 
+        runBenchmark(
+                backends,
+                keyBackend,
+                Arrays.asList(regexes),
+                Arrays.asList(input),
+                3);
     }
 
 }
