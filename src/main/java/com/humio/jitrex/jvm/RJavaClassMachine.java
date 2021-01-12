@@ -1131,6 +1131,30 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
         }
     }
 
+    private void genCharMatches() {
+        try {
+            if ((getExtensions() & FLAG_IGNORECASE) == 0) {
+                gen.invokestatic(stubClass, "charMatches", "(Ljava/lang/CharSequence;IC)Z");
+            } else {
+                gen.invokestatic(stubClass, "charMatchesInsensitive", "(Ljava/lang/CharSequence;IC)Z");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void genSubstringMatches() {
+        try {
+            if ((getExtensions() & FLAG_IGNORECASE) == 0) {
+                gen.invokestatic(stubClass, "substringMatches", "(Ljava/lang/CharSequence;ILjava/lang/String;)Z");
+            } else {
+                gen.invokestatic(stubClass, "substringMatchesInsensitive", "(Ljava/lang/CharSequence;ILjava/lang/String;)Z");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void skip() {
         try {
             AbstractMark againMark = gen.newMark();
@@ -1415,6 +1439,50 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
         }
     }
 
+    // How long a string will we unfold into character comparisons?
+    private static final int SHORT_STRING_LIMIT = 8;
+    private static final boolean USE_NEW_ASSERT2 = true;
+
+    public void newAssert2Comparison(char[] constStr) throws IOException {
+        if (constStr.length <= SHORT_STRING_LIMIT) {
+            // Compare char-by-char.
+            //
+            // TODO: investigate whether it's worth loading the input just once and dup'ing it rather than loading it
+            //   each time round the loop. This would also save on instructions.
+            for (int i = 0; i < constStr.length; i++) {
+                gen.load(V_STRING, charSequenceType);
+                gen.load(V_HEAD, "I");
+                gen.loadConst((int) constStr[i]);
+                genCharMatches();
+                gen.jumpIf(true, gen.TOKEN_EE, "Z", failMark);
+                gen.iinc(V_HEAD, 1);
+            }
+        } else {
+            // For long strings unfolding char-by-char comparison generates a lot of code so at a certain point we
+            // instead push the string to the constant pool and perform the comparison in a function.
+            //
+            // TODO: investigate whether unfolding the first N char comparisons and only go to substring comparison
+            //   after they match is worth the effort.
+            gen.load(V_STRING, charSequenceType);
+            gen.load(V_HEAD, "I");
+            gen.loadConst(new String(constStr));
+            genSubstringMatches();
+            gen.jumpIf(true, gen.TOKEN_EE, "Z", failMark);
+            gen.iinc(V_HEAD, constStr.length);
+        }
+    }
+
+    public void oldAssert2Comparison(char[] constStr) throws IOException {
+        for (int i = 0; i < constStr.length; i++) {
+            gen.load(V_STRING, charSequenceType);
+            gen.load(V_HEAD, "I");
+            genCharAt();
+            gen.loadConst((int) constStr[i]);
+            gen.jumpIf(false, gen.TOKEN_NE, "I", failMark);
+            gen.iinc(V_HEAD, 1);
+        }
+    }
+
     public void assert2(char[] constStr) {
         try {
             AbstractMark againMark = gen.newMark();
@@ -1428,13 +1496,11 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
                 gen.load(V_END, "I");
             }
             refillIfHaveTo(againMark);
-            for (int i = 0; i < constStr.length; i++) {
-                gen.load(V_STRING, charSequenceType);
-                gen.load(V_HEAD, "I");
-                genCharAt();
-                gen.loadConst((int) constStr[i]);
-                gen.jumpIf(false, gen.TOKEN_NE, "I", failMark);
-                gen.iinc(V_HEAD, 1);
+
+            if (USE_NEW_ASSERT2) {
+                newAssert2Comparison(constStr);
+            } else {
+                oldAssert2Comparison(constStr);
             }
         } catch (IOException e) {
             e.printStackTrace();

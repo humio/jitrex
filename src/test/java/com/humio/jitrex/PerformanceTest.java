@@ -83,9 +83,8 @@ public class PerformanceTest {
         for (int iter = 0; iter < ITERS; iter++) {
 
             System.out.println("---------------- ITER: " +iter+" -----------------");
-
-            System.out.println("regex | matches | `jitrex` | `com.google.re2j` | `java.util.regex`");
-            System.out.println("---   | ---     | ---      | ---               | ---  ");
+            System.out.println("regex                                            | matches | `jitrex`   | `com.google.re2j`   | `java.util.regex`");
+            System.out.println("-------------------------------------------------+---------+------------+---------------------+------------------");
 
 
 
@@ -152,7 +151,15 @@ public class PerformanceTest {
                 total3 += google_re2;
 
 
-                System.out.println(" `/"+regexes[i].replace("|", "\\|")+"/` | "+matches2+" | "+humio_jitrex+"ms | "+google_re2+"ms  ("+(100*google_re2/humio_jitrex)+"%) | "+java_util+"ms ("+(100*java_util/humio_jitrex)+"%)");
+                System.out.println(
+                        String.format("%-48s | %7s | %8sms | %8sms  (%4s%%) | %8sms (%4s%%)",
+                                ("`/" + regexes[i].replace("|", "\\|") + "/`"),
+                                matches2,
+                                humio_jitrex,
+                                google_re2,
+                                (100*google_re2/humio_jitrex),
+                                java_util,
+                                (100*java_util/humio_jitrex)));
 
                 // System.out.println("regex["+i+"], matches="+matches1+"|"+matches2+"|"+matches3+"  jitrex:"+humio_jitrex+"ms; re2j:"+google_re2+"ms; java:"+java_util+"ms"+"; speedup: "+(100*google_re2/humio_jitrex)+"%"+" / "+(100*java_util/humio_jitrex)+"%");
 
