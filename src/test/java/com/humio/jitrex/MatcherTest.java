@@ -7,10 +7,12 @@ import com.humio.jitrex.util.Regex;
 import com.humio.jitrex.jvm.Sample2;
 import com.humio.util.jint.util.CompilerException;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import java.lang.management.ManagementFactory;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -469,4 +471,35 @@ public class MatcherTest {
 
         assertTrue(m.find());
     }
+
+    @Ignore("For running manually, typically with -XX:+PrintGC so you can track garbage collection")
+    @Test
+    public void testClassLeak() {
+        // In case you need the pid for jmap this prints it.
+        System.out.println("##### PROCESS: " + ManagementFactory.getRuntimeMXBean().getName() + " #####");
+        String str = "sheltercatchasmcovesilencebowltreelagoon|waterfalldewclifflightrivercatsuniceberg|" +
+                "applebedbananabirdrivercoaldawnleaves|lioncreekmistgardenduckbeachlawnautumn|" +
+                "teacherdovesunshinesoupbriarsfreezedarknessdusk|riversoilbreadfogbikesunsetchairanimal|" +
+                "starpondbeedogforestgeyserrabbitsummer|pantsearthdawncoalfernduskwaterfallfog|" +
+                "milkvalleybreezerabbitfogduckapplesnowflake|brookcliffmarshbeachabyssearthgeyserwindow|" +
+                "darknesslionreefcoastdawnwillowdoorrain|bananabranchcanopyswampauroracliffsoilcar|" +
+                "bedsparrowcerealcavelionflooddoveshirt|covesnowflakesunrisetsunamidoorflowersoulcar|" +
+                "gurugiftstormtrucktigerslagoonbedcereal|guidesandfishflowerlandcavestarcoast|" +
+                "chaircookieoceancavernbunnyshelterfloweroasis|marshmountainlionskycowwintersunpine|" +
+                "fishjuicemouseprizefarmapplefireflyfield|trainsheltermousetreereservegalaxyvolcanolagoon";
+        for (int i = 0; i < 1000000; i++) {
+            Pattern pattern = Pattern.compile(str);
+            assertTrue(pattern.matches("sheltercatchasmcovesilencebowltreelagoon"));
+            if ((i + 1) % 1000 == 0) {
+                // Garbage collection doesn't necessarily unload classes but
+                // this should for it so you should see the heap size drop down
+                // to almost nothing. If it doesn't that doesn't necessarily
+                // mean there's a leak, it could just be things aren't being
+                // cleaned up. In that case you can use jmap to dump the entire
+                // heap.
+                System.gc();
+            }
+        }
+    }
+
 }
