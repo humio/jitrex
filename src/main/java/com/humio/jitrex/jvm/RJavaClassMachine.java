@@ -45,7 +45,6 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
     public static int NVARS = 9;
     static Object counterLock = new Object();
     static int counter = 0;
-    static Loader loader = new Loader();
     static String refillSignature = "(L" + Regex.class.getName().replace('.', '/') + ";I)I";
     static String stubClass = JavaClassRegexStub.class.getName().replace('.', '/');
     static String refillerClass = RegexRefiller.class.getName().replace('.', '/');
@@ -976,6 +975,7 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
                     System.out.println("*** WRITTEN " + name + " ***");
                 }
                 if (loadClass) {
+                    Loader loader = new Loader();
                     compiledClass = (Class<JavaClassRegexStub>) loader.makeClass(thisClass, body);
                 }
             }
