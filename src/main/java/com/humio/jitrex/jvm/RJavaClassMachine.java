@@ -967,7 +967,7 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
 
                 byte[] body = baos.toByteArray();
 
-                if (saveBytecode) {
+                if (saveBytecode || ((getExtensions() & regexFlagToExtension(Regex._SAVE_BYTECODE)) != 0)) {
                     String name = thisClass + ".class";
                     FileOutputStream fos = new FileOutputStream(name);
                     fos.write(body);
@@ -1125,6 +1125,30 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
                 gen.invokestatic(stubClass, "charAt", "(Ljava/lang/CharSequence;I)C");
             } else {
                 gen.invokestatic(stubClass, "lowerCaseCharAt", "(Ljava/lang/CharSequence;I)C");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void genCharMatches() {
+        try {
+            if ((getExtensions() & FLAG_IGNORECASE) == 0) {
+                gen.invokestatic(stubClass, "charMatches", "(Ljava/lang/CharSequence;IC)Z");
+            } else {
+                gen.invokestatic(stubClass, "charMatchesInsensitive", "(Ljava/lang/CharSequence;IC)Z");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void genSubstringMatches() {
+        try {
+            if ((getExtensions() & FLAG_IGNORECASE) == 0) {
+                gen.invokestatic(stubClass, "substringMatches", "(Ljava/lang/CharSequence;ILjava/lang/String;)Z");
+            } else {
+                gen.invokestatic(stubClass, "substringMatchesInsensitive", "(Ljava/lang/CharSequence;ILjava/lang/String;)Z");
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -1415,6 +1439,50 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
         }
     }
 
+    // How long a string will we unfold into character comparisons?
+    private static final int SHORT_STRING_LIMIT = 8;
+
+    // For long strings how many of the first characters will we compare before jumping into substring comparison?
+    private static final int UNROLL_PREFIX_SIZE = 4;
+
+    public void newAssert2Comparison(char[] constStr) throws IOException {
+        int charsToUnroll = (constStr.length <= SHORT_STRING_LIMIT)
+                ? constStr.length
+                : UNROLL_PREFIX_SIZE;
+
+        // Compare char-by-char.
+        for (int i = 0; i < charsToUnroll; i++) {
+            gen.load(V_STRING, charSequenceType);
+            gen.load(V_HEAD, "I");
+            gen.loadConst((int) constStr[i]);
+            genCharMatches();
+            gen.jumpIf(true, gen.TOKEN_EE, "Z", failMark);
+            gen.iinc(V_HEAD, 1);
+        }
+
+        // For long strings unfolding char-by-char comparison generates a lot of code so at a certain point we instead
+        // push the string to the constant pool and perform the comparison in a function.
+        if (charsToUnroll < constStr.length) {
+            gen.load(V_STRING, charSequenceType);
+            gen.load(V_HEAD, "I");
+            gen.loadConst(new String(constStr).substring(charsToUnroll));
+            genSubstringMatches();
+            gen.jumpIf(true, gen.TOKEN_EE, "Z", failMark);
+            gen.iinc(V_HEAD, constStr.length - charsToUnroll);
+        }
+    }
+
+    public void oldAssert2Comparison(char[] constStr) throws IOException {
+        for (int i = 0; i < constStr.length; i++) {
+            gen.load(V_STRING, charSequenceType);
+            gen.load(V_HEAD, "I");
+            genCharAt();
+            gen.loadConst((int) constStr[i]);
+            gen.jumpIf(false, gen.TOKEN_NE, "I", failMark);
+            gen.iinc(V_HEAD, 1);
+        }
+    }
+
     public void assert2(char[] constStr) {
         try {
             AbstractMark againMark = gen.newMark();
@@ -1428,13 +1496,11 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
                 gen.load(V_END, "I");
             }
             refillIfHaveTo(againMark);
-            for (int i = 0; i < constStr.length; i++) {
-                gen.load(V_STRING, charSequenceType);
-                gen.load(V_HEAD, "I");
-                genCharAt();
-                gen.loadConst((int) constStr[i]);
-                gen.jumpIf(false, gen.TOKEN_NE, "I", failMark);
-                gen.iinc(V_HEAD, 1);
+
+            if ((getExtensions() & RMachine.regexFlagToExtension(Regex._OLD_LONG_STRING_HANDLING)) != 0) {
+                oldAssert2Comparison(constStr);
+            } else {
+                newAssert2Comparison(constStr);
             }
         } catch (IOException e) {
             e.printStackTrace();

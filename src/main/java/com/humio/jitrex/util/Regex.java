@@ -48,6 +48,9 @@ public abstract class Regex implements Cloneable, FilenameFilter {
     public static final int DOTALL = 0x04;
     public static final int LAZY = 0x08;
 
+    public static final int _OLD_LONG_STRING_HANDLING = 0x10;
+    public static final int _SAVE_BYTECODE = 0x20;
+
     public static Regex createRegex(String re) {
         if (factory == null)
             initFactory();

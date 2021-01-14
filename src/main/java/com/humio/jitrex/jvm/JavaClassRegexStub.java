@@ -303,6 +303,15 @@ public abstract class JavaClassRegexStub extends Regex {
         return cs.charAt(i);
     }
 
+    /**
+     * Returns true if the character at the i'th position in the input has the
+     * expected value. The index is guaranteed to be within the bounds of the
+     * string.
+     */
+    protected static boolean charMatches(CharSequence input, int i, char expected) {
+        return input.charAt(i) == expected;
+    }
+
     protected static char lowerCaseCharAt(CharSequence cs, int i) {
         char ch = cs.charAt(i);
         if (ch < 128) {
@@ -314,6 +323,56 @@ public abstract class JavaClassRegexStub extends Regex {
         } else {
             return Character.toLowerCase(ch);
         }
+    }
+
+    /**
+     * Returns true if the character at the i'th position in the input has the
+     * expected value, independent of case. The index is guaranteed to be within
+     * the bounds of the string and the expected character is guaranteed to be
+     * lower case if it is alphabetical.
+     */
+    protected static boolean charMatchesInsensitive(CharSequence input, int i, char expected) {
+        char ch = input.charAt(i);
+        if (ch == expected)
+            return true;
+        if (ch < 128) {
+            if (ch >= 'A' && ch <= 'Z') {
+                char lower = (char) ((int)ch + ('a' - 'A'));
+                return lower == expected;
+            } else {
+                return false;
+            }
+        } else {
+            return Character.toLowerCase(ch) == expected;
+        }
+    }
+
+    /**
+     * Returns true if the substring starting at the given offset in the input
+     * is the given string. It is guaranteed that the input has at least the
+     * string's length characters left after the offset.
+     */
+    protected static boolean substringMatches(CharSequence input, int offset, String expected) {
+        int length = expected.length();
+        for (int i = 0; i < length; i++) {
+            if (!charMatches(input, offset + i, expected.charAt(i)))
+                return false;
+        }
+        return true;
+    }
+
+    /**
+     * Returns true if the substring starting at the given offset in the input
+     * is the given string, case insensitive. It is guaranteed that the input
+     * has at least the string's length characters left after the offset.
+     */
+    protected static boolean substringMatchesInsensitive(CharSequence input, int offset, String expected) {
+        int length = expected.length();
+        for (int i = 0; i < length; i++) {
+            if (!charMatchesInsensitive(input, offset + i, expected.charAt(i)))
+                return false;
+        }
+        return true;
     }
 
     protected static int cmpUnixLineTerminator(char c) {
