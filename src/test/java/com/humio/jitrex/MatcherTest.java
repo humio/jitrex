@@ -2,9 +2,9 @@ package com.humio.jitrex;
 
 import com.humio.jitrex.jvm.JavaClassRegexStub;
 import com.humio.jitrex.jvm.Sample;
+import com.humio.jitrex.jvm.Sample2;
 import com.humio.jitrex.tree.CharSet;
 import com.humio.jitrex.util.Regex;
-import com.humio.jitrex.jvm.Sample2;
 import com.humio.util.jint.util.CompilerException;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -16,7 +16,8 @@ import java.lang.management.ManagementFactory;
 import java.util.*;
 
 import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 /*
 import java.util.jitrex.Pattern;
@@ -474,19 +475,11 @@ public class MatcherTest {
     public void testClassLeak() {
         // In case you need the pid for jmap this prints it.
         System.out.println("##### PROCESS: " + ManagementFactory.getRuntimeMXBean().getName() + " #####");
-        String str = "sheltercatchasmcovesilencebowltreelagoon|waterfalldewclifflightrivercatsuniceberg|" +
-                "applebedbananabirdrivercoaldawnleaves|lioncreekmistgardenduckbeachlawnautumn|" +
-                "teacherdovesunshinesoupbriarsfreezedarknessdusk|riversoilbreadfogbikesunsetchairanimal|" +
-                "starpondbeedogforestgeyserrabbitsummer|pantsearthdawncoalfernduskwaterfallfog|" +
-                "milkvalleybreezerabbitfogduckapplesnowflake|brookcliffmarshbeachabyssearthgeyserwindow|" +
-                "darknesslionreefcoastdawnwillowdoorrain|bananabranchcanopyswampauroracliffsoilcar|" +
-                "bedsparrowcerealcavelionflooddoveshirt|covesnowflakesunrisetsunamidoorflowersoulcar|" +
-                "gurugiftstormtrucktigerslagoonbedcereal|guidesandfishflowerlandcavestarcoast|" +
-                "chaircookieoceancavernbunnyshelterfloweroasis|marshmountainlionskycowwintersunpine|" +
-                "fishjuicemouseprizefarmapplefireflyfield|trainsheltermousetreereservegalaxyvolcanolagoon";
+        List<String> strings = buildLongStrings(100, 32);
+        String str = listToAlternation(strings);
         for (int i = 0; i < 1000000; i++) {
             Pattern pattern = Pattern.compile(str);
-            assertTrue(pattern.matches("sheltercatchasmcovesilencebowltreelagoon"));
+            assertTrue(pattern.matches(strings.get(i % strings.size())));
             if ((i + 1) % 1000 == 0) {
                 // Garbage collection doesn't necessarily unload classes but
                 // this should for it so you should see the heap size drop down
@@ -540,16 +533,21 @@ public class MatcherTest {
         testShortStringHeavyRegexp(true);
     }
 
-    public void testLongStringHeavyRegexp(boolean caseInsensitive) {
+    private static List<String> buildLongStrings(int count, int parts) {
         Random random = new Random(1214213);
         List<String> longWords = new ArrayList<>();
-        for (int iw = 0; iw < 100; iw++) {
+        for (int iw = 0; iw < count; iw++) {
             StringBuilder buf = new StringBuilder();
-            for (int ip = 0; ip < 8; ip++) {
+            for (int ip = 0; ip < parts; ip++) {
                 buf.append(nouns.get(random.nextInt(nouns.size())));
             }
             longWords.add(buf.toString());
         }
+        return longWords;
+    }
+
+    public void testLongStringHeavyRegexp(boolean caseInsensitive) {
+        List<String> longWords = buildLongStrings(100, 8);
         Pattern p = Pattern.compile(listToAlternation(longWords), caseInsensitive ? Pattern.CASE_INSENSITIVE : 0);
         for (String longWord : longWords) {
             assertTrue(p.matches(longWord));
