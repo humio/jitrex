@@ -2,14 +2,25 @@ package com.humio.jitrex;
 
 public class IllegalRegexException extends IllegalArgumentException {
 
-    private final BadRegexCause cause;
+    private final BadRegexCause reason;
 
     public enum BadRegexCause {
-        REGEX_TOO_LONG
+        REGEX_TOO_LONG,
+        GENERATED_CLASS_INVALID
     }
 
-    public IllegalRegexException(BadRegexCause cause, String message) {
+    public IllegalRegexException(BadRegexCause reason, String message) {
         super(message);
-        this.cause = cause;
+        this.reason = reason;
     }
+
+    public IllegalRegexException(BadRegexCause reason, String message, Throwable cause) {
+        super(message, cause);
+        this.reason = reason;
+    }
+
+    public BadRegexCause getReason() {
+        return this.reason;
+    }
+
 }

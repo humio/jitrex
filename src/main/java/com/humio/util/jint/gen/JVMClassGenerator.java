@@ -6,6 +6,7 @@
 */
 package com.humio.util.jint.gen;
 
+import com.humio.jitrex.IllegalRegexException;
 import com.humio.util.jint.constants.DefinitionConst;
 import com.humio.util.jint.constants.TokenConst;
 
@@ -425,8 +426,14 @@ public class JVMClassGenerator extends CodeGenerator implements JVMCodes {
             codeAcc.flush();
         } catch (IOException e) {
         }
+        byte[] bytecode = codeAccInt.toByteArray();
+        if (bytecode.length >= 64 * 1024) {
+            throw new IllegalRegexException(IllegalRegexException.BadRegexCause.REGEX_TOO_LONG,
+                    "Regular expression generated more than 64K bytecode");
+        }
+
         if ((currentMethod.flags & (DefinitionConst.ACC_NATIVE | DefinitionConst.ACC_ABSTRACT)) == 0) {
-            currentMethod.code = codeAccInt.toByteArray();
+            currentMethod.code = bytecode;
             if (currentMethod.code.length == 0)
                 currentMethod.code = null;
             else {
