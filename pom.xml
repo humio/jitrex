@@ -22,7 +22,7 @@
 
     <groupId>com.humio</groupId>
     <artifactId>jitrex</artifactId>
-    <version>0.1-SNAPSHOT</version>
+    <version>0.1.16</version>
     <inceptionYear>2019</inceptionYear>
     <scm>
         <connection>scm:git:https://github.com/humio/jitrex</connection>
