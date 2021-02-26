@@ -979,7 +979,7 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
                     compiledClass = (Class<JavaClassRegexStub>) loader.makeClass(thisClass, body);
                 }
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -988,7 +988,8 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
         try {
             return compiledClass.getConstructor().newInstance();
         } catch (java.lang.VerifyError e) {
-            throw new IllegalRegexException(IllegalRegexException.BadRegexCause.REGEX_TOO_LONG, "given regular expression is too long");
+            throw new IllegalRegexException(IllegalRegexException.BadRegexCause.GENERATED_CLASS_INVALID,
+                    "Generated code could not be verified", e);
         } catch (InstantiationException e) {
             e.printStackTrace();
         } catch (IllegalAccessException e) {

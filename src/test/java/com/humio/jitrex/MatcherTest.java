@@ -37,7 +37,7 @@ public class MatcherTest {
         } catch (CompilerException e) {
             // ok //
         }
-        
+
         try {
             Pattern p = Pattern.compile("^(");
             Assert.fail("compile should fail");
@@ -560,6 +560,43 @@ public class MatcherTest {
     public void testLongStringHeavyRegexp() {
         testLongStringHeavyRegexp(false);
         testLongStringHeavyRegexp(true);
+    }
+
+    private static final String REGRESS_12012 = "^(<(?<priority>\\d+)>)?(?<@timestamp>\\S+\\s+\\S+\\s+\\S+)" +
+            "\\s+(?<host>\\S+)\\s+(?<process_name>[^\\s\\[:]+)\\[(?<pid>[^\\]]+)\\]:" +
+            "\\s+(?<client_ip>[^: ]+)(:(?<client_port>\\S+))?\\s+\\[(?<accept_date>[^\\]]+)\\]" +
+            "\\s+(?<frontend>[^\\s\\~]+)(?<tls>\\~)?\\s+(?<backend>[^\\/]+)\\/(?<server>\\S+)" +
+            "\\s+(?<timers>\\S+)\\s+(?<status_code>\\S+)\\s+(?<bytes_read>\\S+)\\s+(?<caputred_request_cookie>\\S+)" +
+            "\\s+(?<caputred_response_cookie>\\S+)\\s+(?<termination_state>\\S+)\\s+(?<actconn>[^\\s\\/]+)\\/" +
+            "(?<feconn>[^\\s\\/]+)\\/(?<beconn>[^\\s\\/]+)\\/(?<src_conn>[^\\s\\/]+)\\/(?<retries>[^\\s\\/]+)" +
+            "\\s+(?<srv_queue>[^\\s\\/]+)\\/(?<backend_queue>[^\\s\\/]+)\\s+(\\{(?<captured_request_headers>[^\\}\\{]*)\\}" +
+            "\\s+(\\{(?<captured_response_headers>[^}]*)\\}\\s+)?)?\\\"(?<http_request>.*)\\\"";
+
+    @Test
+    public void testCharClassHeavy() {
+        Pattern.compile(REGRESS_12012);
+    }
+
+    @Test()
+    public void testTooMuchBytecode() {
+        try {
+            Pattern.compile(REGRESS_12012, Pattern.CASE_INSENSITIVE);
+            Assert.fail();
+        } catch (IllegalRegexException ire) {
+            assertEquals(IllegalRegexException.BadRegexCause.REGEX_TOO_LONG, ire.getReason());
+        }
+    }
+
+    @Ignore("Crashes code generation")
+    @Test
+    public void testRepeatOfDeath() {
+        Pattern.compile("(?:abc){10}{10}{10}{10}{10}{10}{10}{10}{10}{10}{10}{10}{10}{10}");
+    }
+
+    @Ignore("Crashes code generation")
+    @Test
+    public void testCharClassOfDeath() {
+        Pattern.compile("[^:/?#]").matches("uggc://jjj.snprobbx.pbz/ybtva.cuc");
     }
 
 }
