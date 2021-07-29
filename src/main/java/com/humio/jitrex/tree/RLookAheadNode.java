@@ -49,7 +49,7 @@ public class RLookAheadNode extends RNode {
     }
 
     public boolean isStartAnchored() {
-        return (tail != null && tail.isStartAnchored()) || (body != null && body.isStartAnchored());
+        return (tail != null && tail.isStartAnchored()) || (positive && body != null && body.isStartAnchored());
     }
 
     public boolean hasPicks() {
