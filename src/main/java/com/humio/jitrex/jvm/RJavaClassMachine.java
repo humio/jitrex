@@ -23,9 +23,13 @@ import java.io.DataOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
+import java.util.zip.CRC32;
 
 /**
  * This class is RMachine that compiles jitrex instructions into JVM bytecode.
@@ -55,6 +59,7 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
     private static Integer THREE = 3;
     private static Integer MINUS_ONE = -1;
     String stringRep = "***jitrex***";
+    String fullName = null;
     Hashtable<String, Variable[]> vars = new Hashtable<>();
     int varCells = 0;
     int extCells = 0;
@@ -228,6 +233,30 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
         saveBytecode = false;
     }
 
+    private static synchronized int nextCounter() {
+        return ++counter;
+    }
+
+    public static String encodeAsIdentifier(String str) {
+        StringBuilder buf = new StringBuilder();
+        for (byte b : str.getBytes(StandardCharsets.UTF_8)) {
+            if (Character.isJavaIdentifierPart(b) && b != '_') {
+                buf.append((char) b);
+            } else {
+                buf.append(String.format("_%02x", b));
+            }
+        }
+        return buf.toString();
+    }
+
+    public static String crc32(String str) {
+        CRC32 buf = new CRC32();
+        for (byte b : str.getBytes(StandardCharsets.UTF_8)) {
+            buf.update(b);
+        }
+        return Long.toString(buf.getValue(), 16);
+    }
+
     public void init() {
         try {
             // in embedded case
@@ -236,11 +265,22 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
             if (!embed) {
                 simpleLocalAlloc();
                 if (gen == null) {
-                    if (thisClass == null)
-                        synchronized (counterLock) {
-                            counter++;
-                            thisClass = "com/humio/jitrex/jvm/R_tmp" + counter;
+                    if (thisClass == null) {
+                        String nameClause;
+                        String checksumClause;
+                        String sizeClause;
+                        if (fullName == null) {
+                            nameClause = "";
+                            checksumClause = "";
+                            sizeClause = "";
+                        } else {
+                            nameClause = "_" + encodeAsIdentifier(truncateString(fullName, 32));
+                            checksumClause = "_" + crc32(fullName);
+                            sizeClause = "_" + fullName.length();
                         }
+                        String counterClause = "_" + nextCounter();
+                        thisClass = "com/humio/jitrex/jvm/R_tmp" + sizeClause + checksumClause + counterClause + nameClause;
+                    }
                     gen = new JVMClassGenerator(gen.ACC_PUBLIC, thisClass, stubClass);
                 }
                 gen.setSourceFile(compiledFrom == null ? "***regexp***" : compiledFrom);
@@ -1006,12 +1046,17 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
         return vars.size();
     }
 
+    private static String truncateString(String str, int maxLength) {
+        if (str == null || str.length() <= maxLength) {
+            return str;
+        } else {
+            return str.substring(0, maxLength - 3) + "...";
+        }
+    }
+
     public void tellName(String name) {
-        if (name != null)
-            if (name.length() < 28)
-                compiledFrom = name;
-            else
-                compiledFrom = name.substring(0, 25) + "...";
+        compiledFrom = truncateString(name, 28);
+        fullName = name;
         stringRep = "/" + name + "/";
     }
 
