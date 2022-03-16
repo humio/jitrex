@@ -123,11 +123,13 @@ public class CodeGenerator implements DefinitionConst, TokenConst {
         out.println("\tputstatic " + clazz + " " + name + " " + type);
     }
 
-    public void store(int var, String type) throws IOException {
+    public void store(LocalVariable var, String type) throws IOException {
+        var.typeCheck(type);
         out.println("\tstore " + var + " " + type);
     }
 
-    public void load(int var, String type) throws IOException {
+    public void load(LocalVariable var, String type) throws IOException {
+        var.typeCheck(type);
         out.println("\tload " + var + " " + type);
     }
 
@@ -155,7 +157,8 @@ public class CodeGenerator implements DefinitionConst, TokenConst {
         out.println("\tputelement " + type);
     }
 
-    public void iinc(int var, int n) throws IOException {
+    public void iinc(LocalVariable var, int n) throws IOException {
+        var.typeCheck("I");
         out.println("\tiinc " + var + " " + n);
     }
 
@@ -256,6 +259,11 @@ public class CodeGenerator implements DefinitionConst, TokenConst {
 
     public void jsr(AbstractMark mark, int stackChange) throws IOException {
         out.println("\tjsr " + mark + " " + stackChange);
+    }
+
+    public void ret(LocalVariable var) throws IOException {
+        var.typeCheck("L");
+        ret(var.getIndex());
     }
 
     public void ret(int var) throws IOException {

@@ -226,18 +226,20 @@ public class JVMClassGenerator extends CodeGenerator implements JVMCodes {
         String[] interf = {"java/lang/Cloneable", "java/io/Serializable"};
         gen.setInterfaces(interf);
         gen.addField(DefinitionConst.ACC_PUBLIC, "intField", "I", null);
+        LocalVariable v0 = new LocalVariable(0, "L");
+        LocalVariable v1 = new LocalVariable(1, "I");
         try {
             gen.startMethod(DefinitionConst.ACC_PUBLIC, "<init>", "()V", null);
 
-            gen.load(0, "L");
+            gen.load(v0, "L");
             gen.invokespecial("java/lang/Object", "<init>", "()V");
 
-            gen.load(0, "L");
+            gen.load(v0, "L");
             gen.loadConst(1456789);
             gen.putfield("AAA", "intField", "I");
 
             gen.loadConst(10);
-            gen.store(1, "I");
+            gen.store(v1, "I");
 
             AbstractMark m = gen.newMark();
             gen.mark(m);
@@ -246,8 +248,8 @@ public class JVMClassGenerator extends CodeGenerator implements JVMCodes {
             gen.loadConst("Hello, world!");
             gen.invokevirtual("java/io/PrintStream", "println", "(Ljava/lang/String;)V");
 
-            gen.iinc(1, -1);
-            gen.load(1, "I");
+            gen.iinc(v1, -1);
+            gen.load(v1, "I");
             gen.jumpIfNot(true, TokenConst.TOKEN_EE, "I", m);
 
             gen.retrn("V");
@@ -815,7 +817,8 @@ public class JVMClassGenerator extends CodeGenerator implements JVMCodes {
         codeAcc.writeShort(entry.count);
     }
 
-    public void store(int var, String type) throws IOException {
+    public void store(LocalVariable locVar, String type) throws IOException {
+        locVar.typeCheck(type);
         int size;
         int store;
         int store_0;
@@ -855,6 +858,7 @@ public class JVMClassGenerator extends CodeGenerator implements JVMCodes {
                 throw new RuntimeException("Malformed variable descriptor: " + type);
         }
 
+        int var = locVar.getIndex();
         if (var <= 3)
             codeAcc.write(store_0 + var);
         else if (var <= 255) {
@@ -873,10 +877,11 @@ public class JVMClassGenerator extends CodeGenerator implements JVMCodes {
             maxLocals = mv;
     }
 
-    public void load(int var, String type) throws IOException {
+    public void load(LocalVariable locVar, String type) throws IOException {
+        if (locVar == null)
+            throw new RuntimeException("Null register of type " + type);
 
-        if (var < 0)
-            throw new RuntimeException("Negative register: " + var);
+        locVar.typeCheck(type);
 
         int size;
         int load;
@@ -917,6 +922,7 @@ public class JVMClassGenerator extends CodeGenerator implements JVMCodes {
                 throw new RuntimeException("Malformed variable descriptor: " + type);
         }
 
+        int var = locVar.getIndex();
         if (var <= 3)
             codeAcc.write(load_0 + var);
         else if (var <= 255) {
@@ -1046,7 +1052,9 @@ public class JVMClassGenerator extends CodeGenerator implements JVMCodes {
         stackPop(2 + size);
     }
 
-    public void iinc(int var, int n) throws IOException {
+    public void iinc(LocalVariable locVar, int n) throws IOException {
+        locVar.typeCheck("I");
+        int var = locVar.getIndex();
         if (-128 <= n && n <= 127 && var <= 255) {
             codeAcc.write(iinc);
             codeAcc.write(var);

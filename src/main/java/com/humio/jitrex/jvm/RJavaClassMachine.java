@@ -17,15 +17,20 @@ import com.humio.util.jint.constants.TokenConst;
 import com.humio.util.jint.gen.AbstractMark;
 import com.humio.util.jint.gen.CodeGenerator;
 import com.humio.util.jint.gen.JVMClassGenerator;
+import com.humio.util.jint.gen.LocalVariable;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
+import java.util.zip.CRC32;
 
 /**
  * This class is RMachine that compiles jitrex instructions into JVM bytecode.
@@ -55,10 +60,11 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
     private static Integer THREE = 3;
     private static Integer MINUS_ONE = -1;
     String stringRep = "***jitrex***";
+    String fullName = null;
     Hashtable<String, Variable[]> vars = new Hashtable<>();
     int varCells = 0;
     int extCells = 0;
-    int[] extVarRegs;
+    LocalVariable[] extVarRegs;
     int minLength = 0;
     int maxLength = Integer.MAX_VALUE;
     int flags = 0;
@@ -77,23 +83,25 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
     AbstractMark matchSucceededMark;
     int initStackDepth;
     // always needed
-    int V_HEAD;
-    int V_STRING;
-    int V_CELLS;
-    int V_FORKS;
-    int V_FORKPTR;
-    int V_FAILCOUNT;
-    int V_END;
-    int V_REFILLER = -1; // if not embed; set to RegexRefiller, getting to V_END will cause call to refill
+    LocalVariable V_THIS;
+    LocalVariable V_HEAD;
+    LocalVariable V_STRING;
+    LocalVariable V_CELLS;
+    LocalVariable V_FORKS;
+    LocalVariable V_FORKPTR;
+    LocalVariable V_FAILCOUNT;
+    LocalVariable V_END;
+    LocalVariable V_REFILLER; // if not embed; set to RegexRefiller, getting to V_END will cause call to refill
     // can be allocated as needed
-    int V_RET1 = -1;
-    int V_TMP1 = -1;
-    int V_MFCOUNT = -1;
-    int V_MFHEAD = -1;
-    int V_HEADINC = -1;
-    int V_START = -1; // used only for embedded jitrex
-    int V_BEGIN = -1; // used only for embedded jitrex
-    int V_MAXSTART = -1; // used only for embedded jitrex
+    LocalVariable V_RET1;
+    LocalVariable V_TMP_INT1;
+    LocalVariable V_TMP_INT2;
+    LocalVariable V_TMP_CHAR1;
+    LocalVariable V_MFCOUNT;
+    LocalVariable V_MFHEAD;
+    LocalVariable V_HEADINC;
+    LocalVariable V_START; // used only for embedded jitrex
+    LocalVariable V_BEGIN; // used only for embedded jitrex
     String charType = "C";
     String thisClass;
     String thisType;
@@ -137,18 +145,18 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
     }
 
     private void simpleLocalAlloc() {
-        V_HEAD = 1;
-        V_STRING = 2;
-        V_CELLS = 3;
-        V_FORKS = 4;
-        V_FORKPTR = 5;
-        V_END = 6;
-        V_FAILCOUNT = 7;
+        V_HEAD = new LocalVariable(1, "I");
+        V_STRING = new LocalVariable(2, charSequenceType);
+        V_CELLS = new LocalVariable(3, "[I");
+        V_FORKS = new LocalVariable(4, "[I");
+        V_FORKPTR = new LocalVariable(5, "I");
+        V_END = new LocalVariable(6, "I");
+        V_FAILCOUNT = new LocalVariable(7, "I");
 
         if (noRefiller)
             maxLocalVariable = 8;
         else {
-            V_REFILLER = 8;
+            V_REFILLER = new LocalVariable(8, refillerType);
             maxLocalVariable = 9;
         }
     }
@@ -205,27 +213,35 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
         return (vars.get(var))[0].extCell;
     }
 
-    public void embed(boolean search, CodeGenerator codeGen, RLocalAllocator alloc,
-                      int[] commVar, int[] extVars, AbstractMark fail, AbstractMark success) {
-        embed = true;
-        embedSearch = search;
-        gen = codeGen;
-        allocator = alloc;
-        matchFailedMark = fail;
-        matchSucceededMark = success;
-        V_HEAD = commVar[0];
-        V_STRING = commVar[1];
-        V_CELLS = commVar[2];
-        V_FORKS = commVar[3];
-        V_FORKPTR = commVar[4];
-        V_BEGIN = commVar[5];
-        V_START = commVar[6]; // -1 means it is always 0
-        V_END = commVar[7];
-        V_MAXSTART = commVar[8];
-        extVarRegs = extVars;
-        loadClass = false;
+    private static synchronized int nextCounter() {
+        return ++counter;
+    }
 
-        saveBytecode = false;
+    /**
+     * Encodes an arbitrary string as a valid java identifier. To decode the
+     * result you can use this command:
+     *
+     * echo "2_2b_3a_5ba_2df_5d_2a_3fx_2a_20" | python -c "import re, sys; print(re.sub(r'_(..)', lambda m: chr(int(m.group(1), 16)), sys.stdin.readlines()[0]))"
+     * 2+:[a-f]*?x*
+     */
+    public static String encodeAsIdentifier(String str) {
+        StringBuilder buf = new StringBuilder();
+        for (byte b : str.getBytes(StandardCharsets.UTF_8)) {
+            if (Character.isJavaIdentifierPart(b) && b != '_') {
+                buf.append((char) b);
+            } else {
+                buf.append(String.format("_%02x", b));
+            }
+        }
+        return buf.toString();
+    }
+
+    public static String crc32(String str) {
+        CRC32 buf = new CRC32();
+        for (byte b : str.getBytes(StandardCharsets.UTF_8)) {
+            buf.update(b);
+        }
+        return Long.toString(buf.getValue(), 16);
     }
 
     public void init() {
@@ -236,16 +252,28 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
             if (!embed) {
                 simpleLocalAlloc();
                 if (gen == null) {
-                    if (thisClass == null)
-                        synchronized (counterLock) {
-                            counter++;
-                            thisClass = "com/humio/jitrex/jvm/R_tmp" + counter;
+                    if (thisClass == null) {
+                        String nameClause;
+                        String checksumClause;
+                        String sizeClause;
+                        if (fullName == null) {
+                            nameClause = "";
+                            checksumClause = "";
+                            sizeClause = "";
+                        } else {
+                            nameClause = "_" + encodeAsIdentifier(truncateString(fullName, 32));
+                            checksumClause = "_" + crc32(fullName);
+                            sizeClause = "_" + fullName.length();
                         }
+                        String counterClause = "_" + nextCounter();
+                        thisClass = "com/humio/jitrex/jvm/R_tmp" + sizeClause + checksumClause + counterClause + nameClause;
+                    }
                     gen = new JVMClassGenerator(gen.ACC_PUBLIC, thisClass, stubClass);
                 }
                 gen.setSourceFile(compiledFrom == null ? "***regexp***" : compiledFrom);
 
                 thisType = "L" + thisClass + ";";
+                V_THIS = new LocalVariable(0, thisType);
 
                 gen.startMethod(gen.ACC_PROTECTED, "nextMatchInt", "()Z", null);
             }
@@ -254,40 +282,40 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
             failMark = gen.newMark();
 
             if ((flags & HINT_CHAR_STAR_HEAD) != 0) {
-                if (V_HEADINC < 0)
-                    V_HEADINC = allocator.alloc(); // never freed, never reused
+                if (V_HEADINC == null)
+                    V_HEADINC = allocator.allocVariable("I"); // never freed, never reused
                 gen.loadConst(1);
                 gen.store(V_HEADINC, "I");
             }
 
             if (!embed) {
-                gen.load(0, thisType);
+                gen.load(V_THIS, thisType);
                 gen.getfield(stubClass, "string", charSequenceType);
                 gen.store(V_STRING, charSequenceType);
 
-                gen.load(0, thisType);
+                gen.load(V_THIS, thisType);
                 gen.getfield(stubClass, "cells", "[I");
                 gen.store(V_CELLS, "[I");
 
-                gen.load(0, thisType);
+                gen.load(V_THIS, thisType);
                 gen.getfield(stubClass, "forks", "[I");
                 gen.store(V_FORKS, "[I");
 
-                gen.load(0, thisType);
+                gen.load(V_THIS, thisType);
                 gen.getfield(stubClass, "end", "I");
                 gen.store(V_END, "I");
 
-                gen.load(0, thisType);
+                gen.load(V_THIS, thisType);
                 gen.getfield(stubClass, "failCount", "I");
                 gen.store(V_FAILCOUNT, "I");
 
-                gen.load(0, thisType);
+                gen.load(V_THIS, thisType);
                 gen.getfield(stubClass, "forkPtr", "I");
                 gen.dup("I");
                 gen.store(V_FORKPTR, "I");
 
-                if (V_REFILLER >= 0) {
-                    gen.load(0, thisType);
+                if (V_REFILLER != null) {
+                    gen.load(V_THIS, thisType);
                     gen.getfield(stubClass, "refiller", refillerType);
                     gen.store(V_REFILLER, refillerType);
                 }
@@ -295,16 +323,18 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
                 // if there are forks, start with them
                 gen.jumpIf(true, gen.TOKEN_NE, "I", failMark);
 
-                gen.load(0, thisType);
-                gen.load(0, thisType);
+                gen.load(V_THIS, thisType);
+                gen.load(V_THIS, thisType);
                 gen.getfield(stubClass, "headStart", "I");
                 gen.dup("I");
                 gen.store(V_HEAD, "I");
                 gen.putfield(stubClass, "matchStart", "I");
             }
 
-            V_RET1 = allocator.alloc();  // never freed
-            V_TMP1 = allocator.alloc();  // never freed
+            V_RET1 = allocator.allocVariable("L");  // never freed
+            V_TMP_INT1 = allocator.allocVariable("I");  // never freed
+            V_TMP_INT2 = allocator.allocVariable("I");  // never freed
+            V_TMP_CHAR1 = allocator.allocVariable(charType);  // never freed
 
             startMark = gen.newMark();
             gen.mark(startMark);
@@ -338,13 +368,13 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
 
     private void saveFields() throws IOException {
         if (!embed) {
-            gen.load(0, thisType);
+            gen.load(V_THIS, thisType);
             gen.load(V_FORKS, "[I");
             gen.putfield(stubClass, "forks", "[I");
-            gen.load(0, thisType);
+            gen.load(V_THIS, thisType);
             gen.load(V_FORKPTR, "I");
             gen.putfield(stubClass, "forkPtr", "I");
-            gen.load(0, thisType);
+            gen.load(V_THIS, thisType);
             gen.load(V_FAILCOUNT, "I");
             gen.putfield(stubClass, "failCount", "I");
         }
@@ -362,20 +392,20 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
             char c1 = ranges[i];
             char c2 = ranges[i + 1];
             if (c1 == c2) {
-                gen.load(V_TMP1, charType);
+                gen.load(V_TMP_CHAR1, charType);
                 gen.loadConst((int) c1);
                 gen.jumpIf(false, gen.TOKEN_EE, charType, inRange);
             } else {
                 if (c1 != 0) {
                     if (c2 != 0xFFFF) {
-                        gen.load(V_TMP1, charType);
+                        gen.load(V_TMP_CHAR1, charType);
                         gen.loadConst((int) c1);
                         gen.jumpIf(false, '<', charType, notInRange);
-                        gen.load(V_TMP1, charType);
+                        gen.load(V_TMP_CHAR1, charType);
                         gen.loadConst((int) c2);
                         gen.jumpIf(false, gen.TOKEN_LE, charType, inRange);
                     } else {
-                        gen.load(V_TMP1, charType);
+                        gen.load(V_TMP_CHAR1, charType);
                         gen.loadConst((int) c1);
                         gen.jumpIf(false, gen.TOKEN_GE, charType, inRange);
                     }
@@ -383,7 +413,7 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
                     if (c2 == 0xFFFF) {
                         gen.jump(inRange);
                     } else {
-                        gen.load(V_TMP1, charType);
+                        gen.load(V_TMP_CHAR1, charType);
                         gen.loadConst((int) c2);
                         gen.jumpIf(false, gen.TOKEN_LE, charType, inRange);
                     }
@@ -411,19 +441,18 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
                 mask |= bit;
             }
         }
-        gen.load(V_TMP1, charType);
+        gen.load(V_TMP_CHAR1, charType);
         gen.loadConst(fval);
         gen.op('-', "I");
         gen.dup("I");
-        int V_TMP2 = V_RET1; // we can reuse V_RET1
-        gen.store(V_TMP2, "I");
+        gen.store(V_TMP_INT2, "I");
         gen.loadConst(0xFFFFFFE0);
         gen.op('&', "I");
 
         gen.jumpIf(true, gen.TOKEN_NE, "I", notInRange);
 
         gen.loadConst(1);
-        gen.load(V_TMP2, "I");
+        gen.load(V_TMP_INT2, "I");
         gen.op(gen.TOKEN_LL, "I");
         gen.loadConst(mask);
         gen.op('&', "I");
@@ -460,7 +489,7 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
     }
 
     private void refillIfHaveTo(int op, AbstractMark refilled, AbstractMark onFail) throws IOException {
-        if (embed || V_REFILLER < 0)
+        if (embed || (V_REFILLER == null))
             gen.jumpIf(false, op, "I", onFail);
         else {
             int invOp;
@@ -520,12 +549,12 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
             if (embed)
                 gen.jump(matchSucceededMark);
             else {
-                gen.load(0, thisType);
+                gen.load(V_THIS, thisType);
                 gen.load(V_HEAD, "I");
                 gen.putfield(stubClass, "matchEnd", "I");
 
                 if (customizer != null)
-                    customizer.customSuccessAction(gen, V_STRING, V_CELLS);
+                    customizer.customSuccessAction(gen, V_STRING.getIndex(), V_CELLS.getIndex());
 
                 gen.loadConst(Boolean.TRUE);
                 gen.retrn("Z");
@@ -545,11 +574,11 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
                 gen.mark(refillMark);
                 gen.store(V_RET1, "L");
                 gen.load(V_REFILLER, refillerType);
-                gen.load(0, thisType);
+                gen.load(V_THIS, thisType);
                 gen.load(V_END, "I");
                 gen.invokevirtual(refillerClass, "refill", refillSignature);
 
-                gen.load(0, thisType);
+                gen.load(V_THIS, thisType);
                 gen.getfield(stubClass, "refiller", refillerType);
                 gen.store(V_REFILLER, refillerType);
 
@@ -561,7 +590,7 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
                 gen.load(V_REFILLER, refillerType);
                 gen.jumpIf(true, gen.TOKEN_EE, refillerType, contMark);
 
-                gen.load(0, thisType);
+                gen.load(V_THIS, thisType);
                 gen.loadConst(Integer.MAX_VALUE);
                 gen.putfield(stubClass, "headStart", "I");
                 gen.loadConst(Boolean.FALSE);
@@ -571,19 +600,19 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
 
                 gen.store(V_END, "I");
 
-                gen.load(0, thisType);
+                gen.load(V_THIS, thisType);
                 gen.load(V_END, "I");
                 gen.putfield(stubClass, "end", "I");
 
-                gen.load(0, thisType);
+                gen.load(V_THIS, thisType);
                 gen.getfield(stubClass, "string", charSequenceType);
                 gen.store(V_STRING, charSequenceType);
 
                 if ((flags & HINT_START_ANCHORED) == 0) {
-                    gen.load(0, thisType);
+                    gen.load(V_THIS, thisType);
                     gen.load(V_END, "I");
                     if (minLength > 0)
-                        if (V_REFILLER < 0) {
+                        if (V_REFILLER == null) {
                             gen.loadConst(minLength);
                             gen.op('-', "I");
                         } else {
@@ -603,7 +632,7 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
             if (saveMark != null) {
                 gen.mark(saveMark);
                 gen.store(V_RET1, "L");
-                gen.store(V_TMP1, "I");
+                gen.store(V_TMP_INT1, "I");
                 // checkSize( 2 )
                 gen.load(V_FORKS, "[I");
                 gen.arraylength();
@@ -619,14 +648,14 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
                 gen.load(V_FORKS, "[I");
                 gen.load(V_FORKPTR, "I");
                 gen.load(V_CELLS, "[I");
-                gen.load(V_TMP1, "I");
+                gen.load(V_TMP_INT1, "I");
                 gen.getelement("I");
                 gen.putelement("I");
                 // save cell number
                 gen.iinc(V_FORKPTR, 1);
                 gen.load(V_FORKS, "[I");
                 gen.load(V_FORKPTR, "I");
-                gen.load(V_TMP1, "I");
+                gen.load(V_TMP_INT1, "I");
                 gen.putelement("I");
                 gen.iinc(V_FORKPTR, 1);
                 gen.ret(V_RET1);
@@ -644,7 +673,7 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
             gen.getelement("I");
             gen.iinc(V_FORKPTR, -1);
 
-            if (V_CELLS >= 0) {
+            if (V_CELLS != null) {
                 gen.dup("I");
                 gen.jumpIf(true, '<', "I", forkMark);
 
@@ -663,11 +692,11 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
 
             AbstractMark limit_not_reached = gen.newMark();
             gen.load(V_FAILCOUNT, "I");
-            gen.load(0, thisType);
+            gen.load(V_THIS, thisType);
             gen.getfield(stubClass, "failCountMax", "I");
             gen.jumpIf(false, '<', "I", limit_not_reached);
 
-            gen.load(0, thisType);
+            gen.load(V_THIS, thisType);
             gen.invokevirtual(stubClass, "backtrackLimitReached", "()V");
 
             gen.mark( limit_not_reached );
@@ -678,26 +707,11 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
 
             // TODO: increment it more intelligently
             if (embed) {
-                if (embedSearch && !(V_MAXSTART < 0 || V_MAXSTART == V_START)) {
-                    if ((flags & HINT_CHAR_STAR_HEAD) != 0) {
-                        gen.load(V_BEGIN, "I");
-                        gen.load(V_HEADINC, "I");
-                        gen.op('+', "I");
-                        gen.dup("I");
-                        gen.store(V_BEGIN, "I");
-                    } else {
-                        gen.iinc(V_BEGIN, 1);
-                        gen.load(V_BEGIN, "I");
-                    }
-                    gen.dup("I");
-                    gen.store(V_HEAD, "I");
-                    gen.load(V_MAXSTART, "I");
-                    gen.jumpIf(false, gen.TOKEN_LE, "I", startMark);
-                }
+                assert(!embedSearch);
                 gen.jump(matchFailedMark);
             } else {
-                gen.load(0, thisType);
-                gen.load(0, thisType);
+                gen.load(V_THIS, thisType);
+                gen.load(V_THIS, thisType);
                 gen.getfield(stubClass, "headStart", "I");
                 if ((flags & HINT_CHAR_STAR_HEAD) != 0)
                     gen.load(V_HEADINC, "I");
@@ -731,7 +745,7 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
                 gen.mark(error);
             }
             if (!embed) {
-                gen.load(0, thisType);
+                gen.load(V_THIS, thisType);
                 gen.invokevirtual(stubClass, "dumpForks", "()V");
             }
             gen.newobject("java/lang/IllegalStateException");
@@ -806,26 +820,26 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
             else
                 initSig = "()V";
             gen.startMethod(gen.ACC_PUBLIC, "<init>", initSig, null);
-            gen.load(0, thisType);
+            gen.load(V_THIS, thisType);
             gen.invokespecial(stubClass, "<init>", "()V");
 
             if (varCells != 0) {
                 //--> cells = new int[nCells];
-                gen.load(0, thisType);
+                gen.load(V_THIS, thisType);
                 gen.loadConst(varCells);
                 gen.newarray("I");
                 gen.putfield(stubClass, "cells", "[I");
             }
 
             //--> forks = new int[4];
-            gen.load(0, thisType);
+            gen.load(V_THIS, thisType);
             gen.loadConst(4);
             gen.newarray("I");
             gen.putfield(stubClass, "forks", "[I");
 
             if (extCells != 0) {
                 //--> extCells = new char[nExtCells][];
-                gen.load(0, thisType);
+                gen.load(V_THIS, thisType);
                 gen.loadConst(extCells);
                 gen.newarray("[C");
                 gen.putfield(stubClass, "extCells", "[Ljava/lang/CharSequence;");
@@ -839,20 +853,24 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
             //--> public void init( char[] arr, int off, int len )
             gen.startMethod(gen.ACC_PUBLIC, "init", "(Ljava/lang/CharSequence;II)V", null);
 
+            LocalVariable arrVar = new LocalVariable(1, "Ljava/lang/CharSequence;");
+            LocalVariable offVar = new LocalVariable(2, "I");
+            LocalVariable lenVar = new LocalVariable(3, "I");
+
             //--> this.string = arr
-            gen.load(0, thisType);
-            gen.load(1, "Ljava/lang/CharSequence;");
+            gen.load(V_THIS, thisType);
+            gen.load(arrVar, "Ljava/lang/CharSequence;");
             gen.putfield(stubClass, "string", "Ljava/lang/CharSequence;");
 
             //--> this.start = off
-            gen.load(0, thisType);
-            gen.load(2, "I");
+            gen.load(V_THIS, thisType);
+            gen.load(offVar, "I");
             gen.putfield(stubClass, "start", "I");
 
             //--> this.end = off + len;
-            gen.load(0, thisType);
-            gen.load(2, "I");
-            gen.load(3, "I");
+            gen.load(V_THIS, thisType);
+            gen.load(offVar, "I");
+            gen.load(lenVar, "I");
             gen.op('+', "I");
             gen.putfield(stubClass, "end", "I");
 
@@ -864,49 +882,50 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
                 if (pair[0].extCell >= 0)
                     continue;
 
+                LocalVariable cells = new LocalVariable(1, "[I");
                 for (int q = 0; q < 2; q++) {
                     if (loadCells) {
                         loadCells = false;
-                        gen.load(0, thisType);
+                        gen.load(V_THIS, thisType);
                         gen.getfield(stubClass, "cells", "[I");
-                        gen.store(1, "[I");
+                        gen.store(cells, "[I");
                         loadCells = false;
                     }
-                    gen.load(1, "[I");
+                    gen.load(cells, "[I");
                     gen.loadConst(pair[q].cell);
                     gen.loadConst(MINUS_ONE);
                     gen.putelement("I");
                 }
             }
 
-            gen.load(0, thisType);
+            gen.load(V_THIS, thisType);
             if ((flags & HINT_END_ANCHORED) != 0 && maxLength < 2048 && (this.getExtensions() & FLAG_MULTILINE) == 0) {
-                gen.load(0, thisType);
+                gen.load(V_THIS, thisType);
                 gen.getfield(stubClass, "end", "I");
                 gen.loadConst(maxLength);
                 gen.op('-', "I");
                 gen.dup("I");
-                gen.load(2, "I");
+                gen.load(offVar, "I");
                 AbstractMark skip = gen.newMark();
                 gen.jumpIf(false, gen.TOKEN_GE, "I", skip);
                 gen.pop("I", 1);
-                gen.load(2, "I");
+                gen.load(offVar, "I");
                 gen.mark(skip);
             } else {
-                gen.load(2, "I");
+                gen.load(offVar, "I");
             }
             gen.putfield(stubClass, "headStart", "I");
 
             if ((flags & HINT_START_ANCHORED) != 0 && (this.getExtensions() & FLAG_MULTILINE) == 0) {
-                gen.load(0, thisType);
-                gen.load(2, "I");
+                gen.load(V_THIS, thisType);
+                gen.load(offVar, "I");
                 gen.putfield(stubClass, "maxStart", "I");
             } else {
-                gen.load(0, thisType);
-                gen.load(0, thisType);
+                gen.load(V_THIS, thisType);
+                gen.load(V_THIS, thisType);
                 gen.getfield(stubClass, "end", "I");
                 if (minLength > 0) {
-                    gen.load(0, thisType);
+                    gen.load(V_THIS, thisType);
                     gen.getfield(stubClass, "refiller", refillerType);
                     AbstractMark hasRefiller = gen.newMark();
                     gen.jumpIf(true, gen.TOKEN_NE, refillerType, hasRefiller);
@@ -939,11 +958,11 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
 	*/
 
             //--> forkPtr = 0;
-            gen.load(0, thisType);
+            gen.load(V_THIS, thisType);
             gen.loadConst(ZERO);
             gen.putfield(stubClass, "forkPtr", "I");
 
-            gen.load(0, thisType);
+            gen.load(V_THIS, thisType);
             gen.loadConst(ZERO);
             gen.putfield(stubClass, "failCount", "I");
 
@@ -1006,12 +1025,17 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
         return vars.size();
     }
 
+    private static String truncateString(String str, int maxLength) {
+        if (str == null || str.length() <= maxLength) {
+            return str;
+        } else {
+            return str.substring(0, maxLength - 3) + "...";
+        }
+    }
+
     public void tellName(String name) {
-        if (name != null)
-            if (name.length() < 28)
-                compiledFrom = name;
-            else
-                compiledFrom = name.substring(0, 25) + "...";
+        compiledFrom = truncateString(name, 28);
+        fullName = name;
         stringRep = "/" + name + "/";
     }
 
@@ -1189,14 +1213,14 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
 
                     gen.load(V_HEAD, "I");
                     if (embed) {
-                        if (V_START < 0)
+                        if (V_START == null)
                             gen.jumpIf(true, gen.TOKEN_NE, "I", failMark);
                         else {
                             gen.load(V_START, "I");
                             gen.jumpIf(false, gen.TOKEN_NE, "I", failMark);
                         }
                     } else {
-                        gen.load(0, thisType);
+                        gen.load(V_THIS, thisType);
                         gen.getfield(stubClass, "start", "I");
                         if (multiline) {
                             AbstractMark okMark = gen.newMark();
@@ -1251,7 +1275,7 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
                         gen.jumpIf(false, gen.TOKEN_NE, "I", failMark);
                     }
 
-                    if (V_REFILLER >= 0) {
+                    if (V_REFILLER != null) {
                         AbstractMark contMark = gen.newMark();
                         gen.load(V_REFILLER, refillerType);
                         gen.jumpIf(true, gen.TOKEN_EE, refillerType, contMark);
@@ -1296,10 +1320,10 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
                     gen.load(V_HEAD, "I");
                     genCharAt();
                     gen.dup("I");
-                    gen.store(V_TMP1, "I");
+                    gen.store(V_TMP_INT1, "I");
                     gen.invokestatic("java/lang/Character", "isLetterOrDigit", "(C)Z");
                     gen.jumpIf(true, gen.TOKEN_NE, "Z", isWord);
-                    gen.load(V_TMP1, "I");
+                    gen.load(V_TMP_INT1, "I");
                     gen.loadConst((int) '_');
                     if (type == '<')
                         gen.jumpIf(false, gen.TOKEN_NE, charType, failMark);
@@ -1330,14 +1354,14 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
 
                     gen.load(V_HEAD, "I");
                     if (embed) {
-                        if (V_START < 0)
+                        if (V_START == null)
                             gen.jumpIf(true, gen.TOKEN_EE, "I", notWord);
                         else {
                             gen.load(V_START, "I");
                             gen.jumpIf(false, gen.TOKEN_EE, "I", notWord);
                         }
                     } else {
-                        gen.load(0, thisType);
+                        gen.load(V_THIS, thisType);
                         gen.getfield(stubClass, "start", "I");
                         gen.jumpIf(false, gen.TOKEN_EE, "I", notWord);
                     }
@@ -1347,10 +1371,10 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
                     gen.op('-', "I");
                     genCharAt();
                     gen.dup("I");
-                    gen.store(V_TMP1, "I");
+                    gen.store(V_TMP_INT1, "I");
                     gen.invokestatic("java/lang/Character", "isLetterOrDigit", "(C)Z");
                     gen.jumpIf(true, gen.TOKEN_NE, "Z", isWord);
-                    gen.load(V_TMP1, "I");
+                    gen.load(V_TMP_INT1, "I");
                     gen.loadConst((int) '_');
                     if (type == '>')
                         gen.jumpIf(false, gen.TOKEN_NE, charType, failMark);
@@ -1395,7 +1419,7 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
                 gen.load(V_HEAD, "I");
                 genCharAt();
                 if (ranges != null)
-                    gen.store(V_TMP1, charType);
+                    gen.store(V_TMP_CHAR1, charType);
                 AbstractMark inRange = gen.newMark();
                 if (ranges != null)
                     if (charClass == CLASS_DISABLED || charClass == CLASS_NONE)
@@ -1406,21 +1430,21 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
                     case CLASS_LETTER:
                     case CLASS_NONLETTER:
                         if (ranges != null)
-                            gen.load(V_TMP1, charType);
+                            gen.load(V_TMP_CHAR1, charType);
                         gen.invokestatic("java/lang/Character", "isLetter", "(C)Z");
                         gen.jumpIf(charClass == CLASS_LETTER, true, gen.TOKEN_EE, "Z", failMark);
                         break;
                     case CLASS_UPPERCASE:
                     case CLASS_NONUPPERCASE:
                         if (ranges != null)
-                            gen.load(V_TMP1, charType);
+                            gen.load(V_TMP_CHAR1, charType);
                         gen.invokestatic("java/lang/Character", "isUpperCase", "(C)Z");
                         gen.jumpIf(charClass == CLASS_UPPERCASE, true, gen.TOKEN_EE, "Z", failMark);
                         break;
                     case CLASS_LOWERCASE:
                     case CLASS_NONLOWERCASE:
                         if (ranges != null)
-                            gen.load(V_TMP1, charType);
+                            gen.load(V_TMP_CHAR1, charType);
                         gen.invokestatic("java/lang/Character", "isLowerCase", "(C)Z");
                         gen.jumpIf(charClass == CLASS_LOWERCASE, true, gen.TOKEN_EE, "Z", failMark);
                         break;
@@ -1534,7 +1558,7 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
             gen.load(V_CELLS, "[I");
             gen.loadConst(v[0].cell);
             gen.getelement("I");
-            gen.store(V_TMP1, "I");
+            gen.store(V_TMP_INT1, "I");
 
             AbstractMark againMark = gen.newMark();
             gen.mark(againMark);
@@ -1542,11 +1566,10 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
             gen.load(V_CELLS, "[I");
             gen.loadConst(v[1].cell);
             gen.getelement("I");
-            int V_TMP2 = V_RET1; // overlaps with V_RET1
-            gen.store(V_TMP2, "I");
+            gen.store(V_TMP_INT2, "I");
 
-            gen.load(V_TMP2, "I");
-            gen.load(V_TMP1, "I");
+            gen.load(V_TMP_INT2, "I");
+            gen.load(V_TMP_INT1, "I");
             gen.op('-', "I");
             gen.load(V_END, "I");
             gen.load(V_HEAD, "I");
@@ -1554,7 +1577,7 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
 
             refillIfHaveTo('>', againMark, failMark);
 
-            int varStr;
+            LocalVariable varStr;
             boolean free = false;
 
             if (v[0].extCell >= 0) {
@@ -1562,11 +1585,11 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
                 if (embed) {
                     varStr = extVarRegs[v[0].extCell];
                 } else {
-                    gen.load(0, thisType);
+                    gen.load(V_THIS, thisType);
                     gen.getfield(stubClass, "extCells", charSequenceArrType);
                     gen.loadConst(v[0].extCell);
                     gen.getelement(charSequenceType);
-                    varStr = allocator.alloc();
+                    varStr = allocator.allocVariable(charSequenceType);
                     free = true;
                     gen.store(varStr, charArrType);
                 }
@@ -1579,18 +1602,18 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
             AbstractMark loopMark = gen.newMark();
             gen.mark(loopMark, initStackDepth);
             gen.load(varStr, charSequenceType);
-            gen.load(V_TMP1, "I");
+            gen.load(V_TMP_INT1, "I");
             genCharAt();
             gen.load(V_STRING, charSequenceType);
             gen.load(V_HEAD, "I");
             genCharAt();
             gen.jumpIf(false, gen.TOKEN_NE, charType, failMark);
             gen.iinc(V_HEAD, 1);
-            gen.iinc(V_TMP1, 1);
+            gen.iinc(V_TMP_INT1, 1);
 
             gen.mark(loopStart);
-            gen.load(V_TMP1, "I");
-            gen.load(V_TMP2, "I");
+            gen.load(V_TMP_INT1, "I");
+            gen.load(V_TMP_INT2, "I");
             gen.jumpIf(false, '<', "I", loopMark);
 
             if (free)
@@ -1681,8 +1704,8 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
             mfSaveFailMark = failMark;
             failMark = gen.newMark();
 
-            V_MFCOUNT = allocator.alloc();
-            V_MFHEAD = allocator.alloc();
+            V_MFCOUNT = allocator.allocVariable("I");
+            V_MFHEAD = allocator.allocVariable("I");
 
             mfStartMark = gen.newMark();
             gen.load(V_HEAD, "I");
@@ -1797,8 +1820,8 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
 
             allocator.free(V_MFHEAD);
             allocator.free(V_MFCOUNT);
-            V_MFCOUNT = -1;
-            V_MFHEAD = -1;
+            V_MFCOUNT = null;
+            V_MFHEAD = null;
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -1823,7 +1846,7 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
                 gen.load(V_STRING, charSequenceType);
                 gen.load(V_HEAD, "I");
                 genCharAt();
-                gen.store(V_TMP1, charType);
+                gen.store(V_TMP_CHAR1, charType);
                 AbstractMark inRange = gen.newMark();
                 jumpIfInRange(ranges, null, onFail);
             }
@@ -1839,7 +1862,7 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
      * hard to determine how much left, it is OK not to jump.
      */
     public void condJump(int atLeast, int atMost, RLabel label) {
-        if (!embed && V_REFILLER >= 0)
+        if (!embed && (V_REFILLER != null))
             return; // this optimization is not available
 
         AbstractMark onFail = failMark;
@@ -1904,7 +1927,7 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
             AbstractMark skipMark = gen.newMark();
 
             if (!embed) {
-                gen.load(0, thisType);
+                gen.load(V_THIS, thisType);
                 gen.getfield(stubClass, "searching", "Z");
                 gen.jumpIf(true, gen.TOKEN_EE, "I", skipMark);
             }
@@ -1915,7 +1938,7 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
 
             AbstractMark tryAgain = gen.newMark();
             gen.mark(tryAgain);
-            gen.store(V_TMP1, "I");
+            gen.store(V_TMP_INT1, "I");
 
 
             AbstractMark returnPlus1Mark = gen.newMark(); // when nothing left
@@ -1932,14 +1955,14 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
 
             AbstractMark afterRefillMark = gen.newMark();
             gen.mark(afterRefillMark);
-            gen.load(V_TMP1, "I");
-            gen.load(V_TMP1, "I");
+            gen.load(V_TMP_INT1, "I");
+            gen.load(V_TMP_INT1, "I");
             gen.load(V_END, "I");
             refillIfHaveTo(gen.TOKEN_GE, afterRefillMark, returnPlus1Mark);
 
             //gen.load(V_TMP1, "I");
             gen.load(V_STRING, charSequenceType);
-            gen.load(V_TMP1, "I");
+            gen.load(V_TMP_INT1, "I");
             genCharAt();
             // stack now has: lookup lookupChar
 
@@ -2005,14 +2028,14 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
 
             gen.mark(returnPlus1Mark);
             if (embed) {
-                gen.load(V_TMP1, "I");
+                gen.load(V_TMP_INT1, "I");
                 gen.loadConst(1);
                 gen.op('+', "I");
                 gen.store(V_BEGIN, "I");
                 gen.jump(matchFailedMark);
             } else {
-                gen.load(0, thisType);
-                gen.load(V_TMP1, "I");
+                gen.load(V_THIS, thisType);
+                gen.load(V_TMP_INT1, "I");
                 gen.loadConst(1);
                 gen.op('+', "I");
                 gen.putfield(stubClass, "headStart", "I");
@@ -2029,7 +2052,7 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
                 gen.load(V_HEAD, "I");
                 gen.store(V_BEGIN, "I");
             } else {
-                gen.load(0, thisType);
+                gen.load(V_THIS, thisType);
                 gen.load(V_HEAD, "I");
                 gen.putfield(stubClass, "headStart", "I");
             }
