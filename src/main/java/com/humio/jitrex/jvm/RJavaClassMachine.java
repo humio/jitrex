@@ -217,6 +217,13 @@ public class RJavaClassMachine extends RMachine implements CharClassCodes, Token
         return ++counter;
     }
 
+    /**
+     * Encodes an arbitrary string as a valid java identifier. To decode the
+     * result you can use this command:
+     *
+     * echo "2_2b_3a_5ba_2df_5d_2a_3fx_2a_20" | python -c "import re, sys; print(re.sub(r'_(..)', lambda m: chr(int(m.group(1), 16)), sys.stdin.readlines()[0]))"
+     * 2+:[a-f]*?x*
+     */
     public static String encodeAsIdentifier(String str) {
         StringBuilder buf = new StringBuilder();
         for (byte b : str.getBytes(StandardCharsets.UTF_8)) {
