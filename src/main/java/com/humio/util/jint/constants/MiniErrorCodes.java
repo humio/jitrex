@@ -59,4 +59,8 @@ public interface MiniErrorCodes {
     int ERR_F_INCOMPLETE = ERR_MASK_FORMAT | ERR_MASK_ERROR | 0x005;
     int ERR_F_NOTWITHJAVA = ERR_MASK_FORMAT | ERR_MASK_ERROR | 0x006;
 
+    // compiler codes
+
+    int ERR_C_LOCVAR_TYPING = ERR_MASK_COMPILER | ERR_MASK_ERROR;
+
 }
