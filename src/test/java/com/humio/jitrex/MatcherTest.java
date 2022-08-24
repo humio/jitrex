@@ -587,6 +587,21 @@ public class MatcherTest {
         }
     }
 
+    @Test
+    public void testAnchored() {
+        patt = Pattern.compile("(?!^.o.)b.r");
+        assertEquals(true, patt.matcher("bar").find());
+        assertEquals(false, patt.matcher("bor").find());
+        assertEquals(true, patt.matcher("foo bar").find());
+        assertEquals(true, patt.matcher("foo bor").find());
+        assertEquals(true, patt.matcher("  bar").find());
+        assertEquals(true, patt.matcher("  bor").find());
+        assertEquals(true, patt.matcher(" bar ").find());
+        assertEquals(true, patt.matcher(" bor ").find());
+        assertEquals(true, patt.matcher("barbar").find());
+        assertEquals(true, patt.matcher("borbor").find());
+    }
+
     @Ignore("Crashes code generation")
     @Test
     public void testRepeatOfDeath() {

@@ -57,7 +57,7 @@ public abstract class RNode {
 
     /**
      * Number of variables to be used by this jitrex. This should be upper bound,
-     * but, of cource, it should be as close as possible to what RCompiler will
+     * but, of course, it should be as close as possible to what RCompiler will
      * generate.
      */
     public int getNCells() {
