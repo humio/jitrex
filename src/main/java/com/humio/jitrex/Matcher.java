@@ -8,8 +8,9 @@ package com.humio.jitrex;
 import com.humio.jitrex.util.Regex;
 
 import java.util.*;
+import java.util.regex.MatchResult;
 
-public class Matcher {
+public class Matcher implements MatchResult {
     private final Pattern pattern;
     protected CharSequence input;
     protected final Regex re;
@@ -53,6 +54,10 @@ public class Matcher {
     }
 
     private static Map<String,String> EMPTY_MAP = new HashMap<>();
+
+    public Pattern pattern() {
+        return pattern;
+    }
 
     public void reset() {
         reset(input, EMPTY_MAP);
